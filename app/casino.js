@@ -4,7 +4,14 @@ var ctx;
 
 var activeSprites = [];
 
+// images
+const suits = ["H", "S", "C", "D"];
 const cardImages = [];
+const cardBack = new Image();
+const totalImages = 53;
+var imagesLoaded = 0;
+var loadingReference;
+
 
 class Sprite {
     constructor(img, x, y, scaleX, scaleY, depth=0, visible = true) {
@@ -85,25 +92,37 @@ window.onload = () => {
     ctx.imageSmoothingEnabled = false;
 
     // load card images
-    for (i = 2; i <= 14; i++) {
-        suits = ["H", "S", "C", "D"];
-        for (j = 0; j < suits.length; j++) {
-            var image = new Image();
+    loadingReference = setInterval(loadingScreen, 10);
+    for (let i = 2; i <= 14; i++) {
+        for (let j = 0; j < suits.length; j++) {
+            const image = new Image();
             image.src = "/images/cards/" + i + suits[j] + ".png";
             cardImages.push(image);
+            image.onload = () => imagesLoaded++;
         }
     }
-    cardBack = new Image();
     cardBack.src = "/images/cards/back.png";
-    cardImages.push(cardBack);
+    cardBack.onload = () => imagesLoaded++;
 
-    randomCard = Math.floor(Math.random() * cardImages.length);
-    new Sprite(cardImages[randomCard], 600, 350, 6, 6);
-    requestAnimationFrame(update);
+}
+
+function loadingScreen() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.font = "30px Arial";
+    ctx.fillStyle = "lime";
+    ctx.textAlign = "center";
+    ctx.fillText(`loading... (${imagesLoaded}/${totalImages})`, canvas.width / 2, canvas.height / 2);
+    ctx.draw
+    if (imagesLoaded >= totalImages) {
+        back = new Sprite(cardBack, 450, 350, 6, 6);
+        randomCard = new Sprite(cardImages[Math.floor(Math.random() * cardImages.length)], 750, 350, 6, 6);
+        requestAnimationFrame(update);
+        clearInterval(loadingReference);
+    }
 }
 
 function update() {
-
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     activeSprites.sort((a, b) => a.depth - b.depth);
     activeSprites.forEach((sprite) => {
         sprite.draw(ctx);
