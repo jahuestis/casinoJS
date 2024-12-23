@@ -27,6 +27,14 @@ img {
     image-rendering: pixelated;
 }
 
+#canvas {
+    border: 2px solid lime;
+    padding: 2px;
+    width: 65%;
+    image-rendering: pixelated; /* For crisp scaling */
+    image-rendering: crisp-edges; /* Alternative for some browsers */
+}
+
 .gamelinks {
     text-decoration: none;
 }
