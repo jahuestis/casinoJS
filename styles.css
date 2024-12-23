@@ -1,0 +1,32 @@
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;    
+    color: lime;
+    background-color: black;
+
+}
+
+p {
+    margin: 0.5em 1em 0.5em 1em;
+    font-size: 1.2em;
+}
+
+button:active {
+    transform: scale(0.95); /* Slightly shrink the button */
+
+}
+
+a {
+    color: lime;
+    font-size: 1.2em;
+    margin: 10%;
+}
+
+img {
+    image-rendering: crisp-edges;
+    image-rendering: pixelated;
+}
+
+.gamelinks {
+    text-decoration: none;
+}
