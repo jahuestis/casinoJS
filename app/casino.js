@@ -20,7 +20,6 @@ const cardImages = [];
 const cardBack = new Image();
 const totalImages = 53;
 var imagesLoaded = 0;
-var loadingReference;
 
 var deltaTime = 0;
 var lastUpdateTime = 0;
@@ -102,14 +101,14 @@ class Sprite {
 
 }
 
-class BlackjackCard extends Sprite {
+class PokerCard extends Sprite {
     constructor(card, x, y, scaleX, scaleY, faceUp = true, depth=0, visible = true) {
         super(faceUp == true ? cardImages[card] : cardBack, x, y, scaleX, scaleY, depth, visible);
         this.card = card;
         this.faceUp = faceUp;
     }
     mouseClick() {
-        console.log(`Clicked ${cardImages[this.card].src}`)
+        console.log(`Clicked ${this.card}`)
         this.flip();
     }
     flip() {
@@ -121,12 +120,45 @@ class BlackjackCard extends Sprite {
     }
 }
 
+// -- Client --
+const socket = new WebSocket('ws://localhost:3000');
+
+socket.onmessage = (event) => {
+    const message = JSON.parse(event.data);
+    const messageType = message.type;
+    const data = JSON.parse(message.data);
+    if (messageType === "hand") {
+        const hand = data.hand;
+        card1 = new PokerCard(hand[0], 475, 350, 5, 5, true);
+        card2 = new PokerCard(hand[1], 725, 350, 5, 5, true);
+        console.log(`received hand: ${card1.card} ${card2.card}`);
+    }
+}
+
+function jsonRequestHand(size) {
+    return jsonMessage("requestHand", JSON.stringify({
+        size: size
+    }));
+}
+
+function jsonMessage(type, data) {
+    return JSON.stringify({
+        type: type,
+        data: data
+    });
+}
+
 window.onload = () => {
     canvas = document.getElementById("canvas");
     canvas.width = 1200;
     canvas.height = 700;
     ctx = canvas.getContext("2d");
     ctx.imageSmoothingEnabled = false;
+
+    // disable context menu on canvas
+    canvas.addEventListener('contextmenu', (event) => {
+        event.preventDefault();
+    });
 
     // mouse stuff
     document.addEventListener('mousemove', function(event) {
@@ -148,7 +180,7 @@ window.onload = () => {
     });
 
     // load card images
-    loadingReference = setInterval(loadingScreen, 10);
+    var loadingReference = setInterval(() => loadingScreen(loadingReference), 5);
     for (let i = 2; i <= 14; i++) {
         for (let j = 0; j < suits.length; j++) {
             const image = new Image();
@@ -162,14 +194,12 @@ window.onload = () => {
 
 }
 
-function loadingScreen() {
+function loadingScreen(reference) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawText(ctx, `loading assets... (${imagesLoaded}/${totalImages})`, canvas.width / 2, canvas.height / 2, "Arial", 30, "lime");
-    ctx.draw
     if (imagesLoaded >= totalImages) { // Start Game Loop
-        card1 = new BlackjackCard(Math.floor(Math.random() * cardImages.length), 475, 350, 5, 5, false);
-        card2 = new BlackjackCard(Math.floor(Math.random() * cardImages.length), 725, 350, 5, 5, false, 1);
-        clearInterval(loadingReference);
+        socket.send(jsonRequestHand(2));
+        clearInterval(reference);
         lastUpdateTime = Date.now();
         requestAnimationFrame(update);
     }
@@ -201,8 +231,7 @@ function update() {
         mousedSprites[0].mouseDown();
         if (mouseClick) {
             mousedSprites[0].mouseClick();
-        }
-        if (mouseDown) {
+        } else if (mouseDown) {
             mousedSprites[0].mouseDown();
         }
     }
@@ -225,6 +254,3 @@ function update() {
 
     
 }
-
-
-
