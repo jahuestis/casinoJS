@@ -56,7 +56,7 @@ img {
 
 }
 
-#menu {
+#flex-stack {
     display: flex;
     flex-direction: column;
 }
@@ -69,7 +69,7 @@ img {
 #game-button {
     color: lime;
     text-align: center;
-    border: 2px solid lime;
+    border: .15em solid lime;
     background-color: transparent;
     font-size: 2em;
     padding: .25em .5em .25em .5em;
@@ -81,6 +81,9 @@ img {
     flex-direction: row;
 }
 
+.position-bottom {
+    margin-top: 40px;
+}
 
 .cards {
     width: 12em;

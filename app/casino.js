@@ -2,6 +2,7 @@
 const gameArea = document.getElementById("game");
 const chipsCounter = document.getElementById("chips-counter");
 let chips = 0;
+let displayName = "testplayer";
 
 const handDiv = document.createElement("div");
 handDiv.id = "hand";
@@ -62,7 +63,7 @@ function createButton(text, id = "game-button") {
     return button;
 }
 
-function createStack(elements, id = "menu") {
+function createStack(elements, id = "flex-stack") {
     const stack = document.createElement("div");
     stack.id = id;
     for (let i = 0; i < elements.length; i++) {
@@ -79,6 +80,13 @@ function createDiv(id, width = 'auto', height = 'auto') {
     return div;
 }
 
+function createHeading(text, headingSize = 1, id = "game-heading") {
+    const heading = document.createElement("h" + headingSize);
+    heading.id = id;
+    heading.textContent = text;
+    return heading;
+}
+
 function createCardWithElement(card, faceUp = false) {
     const element = document.createElement("img");
     element.classList.add("cards");
@@ -90,6 +98,7 @@ function createCardWithElement(card, faceUp = false) {
 const chipsButton = createButton("get chips");
 chipsButton.addEventListener("click", () => updateChips(5));
 const pokerButton = createButton("texas holdem");
+pokerButton.addEventListener("click", () => requestPoker(mainMenu));
 const blackjackButton = createButton("blackjack");
 const testButton = createButton("test");
 const mainMenu = createStack([testButton, chipsButton, pokerButton, blackjackButton]);
@@ -101,8 +110,10 @@ const socket = new WebSocket('ws://localhost:3000');
 socket.onmessage = (event) => {
     const message = JSON.parse(event.data);
     const messageType = message.type;
-    const data = JSON.parse(message.data);
-    if (messageType === "hand") {
+    const data = message.data;
+    if (messageType === "requestClient") {
+        socket.send(jsonConnect());
+    }else if (messageType === "hand") {
         const newHand = data.hand;
         console.log(`received hand: ${newHand}`);
         hand = [];
@@ -118,21 +129,30 @@ socket.onmessage = (event) => {
         for (let i = 0; i < hand.length; i++) {
             handDiv.appendChild(hand[i].element);
         }
-        const spacer = createDiv("spacer", "auto", "5vh");
+        const spacer = createDiv("spacer", "auto", "2vh");
         const backButton = createButton("back");
         backButton.addEventListener("click", () => {
-            testLayout.remove();
+            testStack.remove();
             gameArea.appendChild(mainMenu);
         })
-        const testLayout = createStack([handDiv, spacer, backButton], 'test-layout');
-        gameArea.appendChild(testLayout);
+        const testStack = createStack([handDiv, spacer, backButton], 'testStack');
+        gameArea.appendChild(testStack);
     }
 }
 
+function jsonConnect() {
+    return jsonMessage("clientConnected", {
+        name: displayName
+    });
+}
 function jsonRequestHand(size) {
-    return jsonMessage("requestHand", JSON.stringify({
+    return jsonMessage("requestHand", {
         size: size
-    }));
+    });
+}
+
+function jsonQueuePoker() {
+    return jsonMessage("queuePoker", 0);
 }
 
 function jsonMessage(type, data) {
@@ -189,9 +209,40 @@ function loadingScreen(intervalReference, loadingDiv, loadingText) {
     }
 }
 
-function dealTest(menuElement) {
-    menuElement.remove();
+function dealTest(previousPage) {
+    previousPage.remove();
     socket.send(jsonRequestHand(2));
+}
+
+function requestPoker(previousPage) {
+    previousPage.remove();
+    const loadingText = createHeading("waiting for table", 1);
+    const backButton = createButton("back");
+    backButton.addEventListener("click", () => {
+        loadingStack.remove();
+        gameArea.appendChild(mainMenu);
+    })
+    const loadingStack = createStack([loadingText, backButton], "loading-stack");
+    gameArea.appendChild(loadingStack);
+    const loadingStage = new wrapper(1);
+    const loadingInterval = setInterval(() => incrementLoadingText(loadingText, loadingStage, loadingInterval), 500);
+    socket.send(jsonQueuePoker());
+
+}
+
+function incrementLoadingText(text, stage, intervalReference) {
+    text.textContent = "waiting for table" + ".".repeat(stage.value);
+    stage.setValue(((stage.value + 1) % 4));
+}
+
+class wrapper {
+    constructor(value) {
+        this.value = value;
+    }
+
+    setValue(value) {
+        this.value = value;
+    }
 }
 
 

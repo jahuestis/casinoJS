@@ -3,18 +3,27 @@ const socket = new WebSocketServer({
     port: 3000, 
 });
 
-var clients = new Map();
+let clients = new Map();
+let pokerPlayers = []
+let pokerQueue = []
+
 
 socket.on('connection', (ws) => {
-    clients.set(ws, [Math.floor(Math.random() * 52), Math.floor(Math.random() * 52)]);
-    console.log('Client connected');
-
+    try {
+        ws.send(jsonMessage('requestClient', 0));
+    } catch (error) {
+        console.log(error);
+    }
     ws.on('message', (message) => {
         try {
             const messageStr = message instanceof Buffer ? message.toString() : message;
             const messageJSON = JSON.parse(messageStr);
             const type = messageJSON.type;
-            if (type === "requestHand") {
+            const data = messageJSON.data;
+            if (type === "clientConnected") {
+                clients.set(ws, data.name);
+                console.log(`${clients.get(ws)} connected`);
+            } else if (type === "requestHand") {
                 console.log('Client requested hand')
                 ws.send(jsonHand(ws));
             } else {
@@ -46,7 +55,7 @@ function jsonMessage(type, data) {
 
 function jsonHand(client) {
     return jsonMessage("hand", {
-        hand: clients.get(client)
+        hand: [Math.floor(Math.random() * 52), Math.floor(Math.random() * 52)]
     });
 
 }
