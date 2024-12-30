@@ -44,14 +44,40 @@ img {
     image-rendering: pixelated;
 }
 
-#canvas {
-    border: 2px solid lime;
+#game {
+    
     padding: 2px;
-    width: 65%;
-    image-rendering: pixelated; /* For crisp scaling */
-    image-rendering: crisp-edges; /* Alternative for some browsers */
+    width: 75vw;
+    height: 75vh;
+    margin: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
 }
 
-.gamelinks {
-    text-decoration: none;
+#menu {
+    display: flex;
+    flex-direction: column;
+}
+
+#loading-div {
+    text-align: center;
+    display: flex;
+}
+
+#game-button {
+    color: lime;
+    text-align: center;
+    border: 2px solid lime;
+    background-color: transparent;
+    font-size: 2em;
+    padding: .25em .5em .25em .5em;
+    margin: .15em;   
+}
+
+
+.cards {
+    display: flex;
+    width: 15vw;
 }

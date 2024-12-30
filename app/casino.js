@@ -1,123 +1,74 @@
 
-// canvas
-var canvas;
-var ctx;
+const gameArea = document.getElementById("game");
+const chipsCounter = document.getElementById("chips-counter");
+let chips = 0;
 
-// Sprite collections
-var activeSprites = [];
-var mousedSprites = [];
+function updateChips(count) {
+    chips += count;
+    chipsCounter.textContent = "chips: " + chips;
+}
 
 // Input info
-var mouseX = 0;
-var mouseY = 0;
-var mouseDown = false;
-var mouseClick = false;
-var totalClicks = 0;
+let mouseX = 0;
+let mouseY = 0;
+let mouseDown = false;
+let mouseClick = false;
+let totalClicks = 0;
 
 // images
 const suits = ["H", "S", "C", "D"];
 const cardImages = [];
 const cardBack = new Image();
-const totalImages = 53;
-var imagesLoaded = 0;
+const totalAssets = 53;
+let assetsLoaded = 0;
 
-var deltaTime = 0;
-var lastUpdateTime = 0;
+let deltaTime = 0;
+let lastUpdateTime = 0;
 
+let hand = [];
 
-class Sprite {
-    constructor(image, x, y, scaleX, scaleY, depth=0, visible = true) {
-        this.image = image;
-        this.x = x;
-        this.y = y;
-        this.scaleX = scaleX;
-        this.scaleY = scaleY;
-        this.depth = depth;
-        this.visible = visible;
-        this.width;
-        this.height;
-
-        this.updateBounds();
-        activeSprites.push(this);
-    }
-    setImage(image) {
-        this.image = image;
-    }
-    moveX(x) {
-        this.x += x;
-    }
-    moveY(y) {
-        this.y += y;
-    }
-    setPosition(x, y) {
-        this.x = x;
-        this.y = y;
-    }
-    setScaleX(scaleX) {
-        this.scaleX = scaleX;
-    }
-    setScaleY(scaleY) {
-        this.scaleY = scaleY;
-    }
-    setScale(scaleX, scaleY) {
-        this.scaleX = scaleX;
-        this.scaleY = scaleY;
-    }
-    setVisible(visible) {
-        this.visible = visible;
-    }
-    updateBounds() {
-        this.width = (this.image.width * this.scaleX);
-        this.height = Math.abs(this.image.height * this.scaleY);
-        this.bounds = [this.x - this.width / 2, this.y - this.height / 2, this.x + this.width / 2, this.y + this.height / 2];
-    }
-    update() {
-        this.updateBounds();
-        if (this.visible && mouseX > this.bounds[0] && mouseX < this.bounds[2] && mouseY > this.bounds[1] && mouseY < this.bounds[3]) {
-            mousedSprites.push(this);
-            //console.log('moused');
-        }
-    }
-
-    mouseClick() {
-        console.log("mouseClick() not implemented");
-    }
-
-    mouseDown() {
-        console.log("mouseDown() not implemented");
-    }
-
-    draw(context) {
-        if (this.visible) {
-            const offsetX = this.width / 2;
-            const offsetY = this.height / 2;
-            context.drawImage(this.image, this.x - offsetX, this.y - offsetY, this.image.naturalWidth * this.scaleX, this.image.naturalHeight * this.scaleY);
-        }
-    }
-
-    destroy() {
-        activeSprites.splice(activeSprites.indexOf(this), 1);
-    }
-
-}
-
-class PokerCard extends Sprite {
-    constructor(card, x, y, scaleX, scaleY, faceUp = true, depth=0, visible = true) {
-        super(faceUp == true ? cardImages[card] : cardBack, x, y, scaleX, scaleY, depth, visible);
+class PokerCard {
+    constructor(card, faceUp, element = null) {
         this.card = card;
         this.faceUp = faceUp;
+        this.element =  element
+        this.image = faceUp ? cardImages[this.card] : cardBack;
+        if (element) {
+            this.element.src = this.image.src
+        }
     }
-    mouseClick() {
-        console.log(`Clicked ${this.card}`)
-        this.flip();
+
+    setElement(element) {
+        this.element = element;
+        this.element.src = this.image.src
     }
+
     flip() {
         this.faceUp = !this.faceUp;
-        this.setImage(this.faceUp == true ? cardImages[this.card] : cardBack);
+        this.image = faceUp ? cardImages[this.card] : cardBack;
+        this.element.src = this.image.src
     }
-    mouseDown() {
+}
 
+// --Create common page elements--
+function createButton(text, id = "game-button") {
+    const button = document.createElement("button");
+    button.id = id;
+    button.textContent = text;
+    return button;
+}
+
+function createMenu(elements, id = "menu") {
+    const menu = document.createElement("div");
+    menu.id = id;
+    if (Array.isArray(elements)) {
+        for (let i = 0; i < elements.length; i++) {
+            menu.appendChild(elements[i]);
+        }
+    } else {
+        menu.appendChild(elements);
     }
+    return menu;
 }
 
 // -- Client --
@@ -129,8 +80,8 @@ socket.onmessage = (event) => {
     const data = JSON.parse(message.data);
     if (messageType === "hand") {
         const hand = data.hand;
-        card1 = new PokerCard(hand[0], 475, 350, 5, 5, true);
-        card2 = new PokerCard(hand[1], 725, 350, 5, 5, true);
+        card1 = new PokerCard(hand[0], true);
+        card2 = new PokerCard(hand[1], true);
         console.log(`received hand: ${card1.card} ${card2.card}`);
     }
 }
@@ -149,29 +100,16 @@ function jsonMessage(type, data) {
 }
 
 window.onload = () => {
-    canvas = document.getElementById("canvas");
-    canvas.width = 1200;
-    canvas.height = 700;
-    ctx = canvas.getContext("2d");
-    ctx.imageSmoothingEnabled = false;
-
-    // disable context menu on canvas
-    canvas.addEventListener('contextmenu', (event) => {
-        event.preventDefault();
-    });
 
     // mouse stuff
     document.addEventListener('mousemove', function(event) {
-        const bounds = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / bounds.width;
-        const scaleY = canvas.height / bounds.height;
-        mouseX = Math.floor((event.clientX - bounds.left) * scaleX);
-        mouseY = Math.floor((event.clientY - bounds.top) * scaleY);
+        mouseX = event.clientX;
+        mouseY = event.clientY;
     });
     document.addEventListener('mousedown', function(event) {
         mouseDown = true;
     });
-    canvas.addEventListener('mouseup', function(event) {
+    document.addEventListener('mouseup', function(event) {
         if (mouseDown) {
             mouseClick = true;
             //console.log("click");
@@ -180,77 +118,56 @@ window.onload = () => {
     });
 
     // load card images
-    var loadingReference = setInterval(() => loadingScreen(loadingReference), 5);
+    const loadingDiv = document.createElement("div");
+    loadingDiv.id = "loading-div";
+    gameArea.appendChild(loadingDiv);
+    const loadingText = document.createElement("p");
+    loadingDiv.appendChild(loadingText);
+    let loadingReference = setInterval(() => loadingScreen(loadingReference, loadingDiv, loadingText), 5);
     for (let i = 2; i <= 14; i++) {
         for (let j = 0; j < suits.length; j++) {
             const image = new Image();
             image.src = "/images/cards/" + i + suits[j] + ".png";
             cardImages.push(image);
-            image.onload = () => imagesLoaded++;
+            image.onload = () => assetsLoaded++;
         }
     }
     cardBack.src = "/images/cards/back.png";
-    cardBack.onload = () => imagesLoaded++;
+    cardBack.onload = () => assetsLoaded++;
 
 }
 
-function loadingScreen(reference) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawText(ctx, `loading assets... (${imagesLoaded}/${totalImages})`, canvas.width / 2, canvas.height / 2, "Arial", 30, "lime");
-    if (imagesLoaded >= totalImages) { // Start Game Loop
+function loadingScreen(intervalReference, loadingDiv, loadingText) {
+    loadingText.textContent = "Loading assets... " + assetsLoaded + "/" + totalAssets;
+    if (assetsLoaded >= totalAssets) { // Start Game Loop
+        loadingDiv.remove();
+        const chipsButton = createButton("get chips");
+        chipsButton.addEventListener("click", () => updateChips(5));
+        const pokerButton = createButton("texas hold em");
+        const blackjackButton = createButton("blackjack");
+        const mainMenu = createMenu([chipsButton, pokerButton, blackjackButton]);
+        gameArea.append(mainMenu);
+        clearInterval(intervalReference);
         socket.send(jsonRequestHand(2));
-        clearInterval(reference);
-        lastUpdateTime = Date.now();
-        requestAnimationFrame(update);
     }
 }
 
-function drawText(context, text, x, y, font, size, color) {
-    context.font = `${size}px ${font}`;
-    context.fillStyle = color;
-    context.textAlign = "center";
-    context.fillText(text, x, y);
-
-}
 
 // -- Game Loop --
+/*
 function update() {
     // delta time
     deltaTime = (Date.now() - lastUpdateTime) / 10;
     lastUpdateTime = Date.now();
 
-    // update sprites
-    activeSprites.forEach((sprite) => {
-        //sprite.moveX(1 * deltaTime);
-        sprite.update();
-    })
-
-    // handle input
-    if (mousedSprites.length > 0) {
-        mousedSprites.sort((a, b) => b.depth - a.depth);
-        mousedSprites[0].mouseDown();
-        if (mouseClick) {
-            mousedSprites[0].mouseClick();
-        } else if (mouseDown) {
-            mousedSprites[0].mouseDown();
-        }
-    }
-    mouseClick = false;
-
-    // draw sprites
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    activeSprites.sort((a, b) => a.depth - b.depth);
-    activeSprites.forEach((sprite) => {
-        sprite.draw(ctx);
-    })
-
-    // draw mouse info
-    drawText(ctx, `${mouseX}, ${mouseY}`, 600, 670, "Arial", 30, "lime");
-
-    // reset inputs
-    mousedSprites = [];
-    // request next frame
     requestAnimationFrame(update);
 
     
+}
+*/
+
+function createCardWithElement(card, faceUp = false) {
+    const element = document.createElement("img");
+    element.class = "cards";
+    return new PokerCard(card, faceUp, element);
 }

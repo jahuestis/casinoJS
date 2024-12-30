@@ -45,8 +45,8 @@ function jsonMessage(type, data) {
 }
 
 function jsonHand(client) {
-    return jsonMessage("hand", JSON.stringify({
+    return jsonMessage("hand", {
         hand: clients.get(client)
-    }));
+    });
 
 }
