@@ -28,7 +28,7 @@ p {
     font-size: 1.2em;
 }
 
-button:active {
+.clickable:active, button:active {
     transform: scale(0.95); /* Slightly shrink the button */
 
 }
@@ -76,8 +76,13 @@ img {
     margin: .15em;   
 }
 
+#hand {
+    display: flex;
+    flex-direction: row;
+}
+
 
 .cards {
-    display: flex;
-    width: 15vw;
+    width: 12em;
+    margin: 1vw;
 }
