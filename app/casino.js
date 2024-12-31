@@ -137,6 +137,10 @@ socket.onmessage = (event) => {
         })
         const testStack = createStack([handDiv, spacer, backButton], 'testStack');
         gameArea.appendChild(testStack);
+    } else if (messageType === "confirmPokerQueued") {
+        if (pokerQueued) {
+            socket.send(jsonMessage("confirmPokerQueued", 0));
+        }
     }
 }
 
@@ -214,24 +218,29 @@ function dealTest(previousPage) {
     socket.send(jsonRequestHand(2));
 }
 
+let pokerQueued = false; 
+
 function requestPoker(previousPage) {
     previousPage.remove();
-    const loadingText = createHeading("waiting for table", 1);
+    const loadingText = createHeading("waiting for game", 1);
     const backButton = createButton("back");
     backButton.addEventListener("click", () => {
         loadingStack.remove();
         gameArea.appendChild(mainMenu);
+        pokerQueued = false; 
     })
     const loadingStack = createStack([loadingText, backButton], "loading-stack");
     gameArea.appendChild(loadingStack);
     const loadingStage = new wrapper(1);
     const loadingInterval = setInterval(() => incrementLoadingText(loadingText, loadingStage, loadingInterval), 500);
     socket.send(jsonQueuePoker());
+    pokerQueued = true;
+
 
 }
 
 function incrementLoadingText(text, stage, intervalReference) {
-    text.textContent = "waiting for table" + ".".repeat(stage.value);
+    text.textContent = "waiting for game" + ".".repeat(stage.value);
     stage.setValue(((stage.value + 1) % 4));
 }
 
