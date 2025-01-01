@@ -105,7 +105,7 @@ class PokerGame {
                 player.incrementTimeInPurgatory();
                 if (player.timeInPurgatory > 6) {
                     this.removePlayer(player.ws);
-                    console.log(`no queue confirmation from ${player.name}, purged`);
+                    console.log(`${player.name} did not accept invitation, purged`);
                 }
             }
 
