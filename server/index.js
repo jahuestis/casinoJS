@@ -2,6 +2,7 @@ const WebSocketServer = require('ws').Server;
 const socket = new WebSocketServer({ 
     port: 3000, 
 });
+let testPlayerCounter = 0;
 
 class PokerGame {
     constructor(maxPlayers = 8) {
@@ -77,6 +78,7 @@ class PokerGame {
         this.playerQueue = this.playerQueue.filter(player => player.ws !== ws);
         this.purgatory = this.purgatory.filter(player => player.ws !== ws);
         this.players = this.players.filter(player => player.ws !== ws);
+        this.sendNames();
     }
 
     advanceFromPurgatory(ws) {
@@ -84,17 +86,20 @@ class PokerGame {
         if (player) {
             this.players.push(player);
             this.purgatory = this.purgatory.filter(player => player.ws !== ws);
+            this.sendNames();
         }
     }
 
     update() {
         if (this.roundState == 0) {
+            // Move players to purgatory for queue confirmation if space available in game
             while (this.players.length < this.maxPlayers && this.playerQueue.length > 0) {
                 const player = this.playerQueue.shift();
                 this.purgatory.push(player);
-                player.ws.send(jsonMessage("confirmPokerQueued", 0));
-                console.log(`${player.name} moved to purgatory to await queued confirmation`);
+                player.ws.send(jsonMessage("invitePoker", 0));
+                console.log(`${player.name} invited to poker and moved to purgatory to await acception`);
             }
+            // Increment time in purgatory
             for (let i = 0; i < this.purgatory.length; i++) {
                 const player = this.purgatory[i];
                 player.incrementTimeInPurgatory();
@@ -103,10 +108,24 @@ class PokerGame {
                     console.log(`no queue confirmation from ${player.name}, purged`);
                 }
             }
+
+            
         }
-        console.log(`queue: ${this.playerQueue}`);
-        console.log(`purgatory: ${this.purgatory}`);
-        console.log(`players: ${this.players}`);
+        //console.log(`queue: ${this.playerQueue}`);
+        //console.log(`purgatory: ${this.purgatory}`);
+        //console.log(`players: ${this.players}`);
+    }
+
+    sendNames() {
+        // send list display names to all current players
+        const playerNames = []
+        this.players.forEach(player => {
+            playerNames.push(player.name);
+        }) 
+
+        this.players.forEach(player => {
+            player.ws.send(jsonNamesList(playerNames));
+        }) 
     }
 
 }
@@ -141,7 +160,7 @@ socket.on('connection', (ws) => {
             const type = messageJSON.type;
             const data = messageJSON.data;
             if (type === "clientConnected") {
-                clients.set(ws, data.name);
+                clients.set(ws, data.name + `${testPlayerCounter++}`);
                 console.log(`${clients.get(ws)} connected`);
             } else if (type === "requestHand") {
                 console.log('Client requested hand')
@@ -149,12 +168,14 @@ socket.on('connection', (ws) => {
             } else if (type === "queuePoker") {
                 poker.addToQueue(ws, clients.get(ws));
                 console.log(`${clients.get(ws)} queued for poker`);
-            } else if (type === "confirmPokerQueued") {
+            } else if (type === "acceptPoker") {
                 if (poker.roundState == 0) {
                     poker.advanceFromPurgatory(ws);
-                    console.log(`${clients.get(ws)} confirmed queued for poker and moved to players`);
+                    console.log(`${clients.get(ws)} accepted poker invitation`);
                 }
 
+            } else if (type === "leavePoker") {
+                poker.removePlayer(ws);
             } else {
                 throw new Error(`Unknown message type: ${type}`);
             }
@@ -180,6 +201,12 @@ function jsonMessage(type, data) {
     return JSON.stringify({
         type: type,
         data: data
+    });
+}
+
+function jsonNamesList(names) {
+    return jsonMessage("namesList", {
+        names: names
     });
 }
 

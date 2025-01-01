@@ -4,6 +4,8 @@ const chipsCounter = document.getElementById("chips-counter");
 let chips = 0;
 let displayName = "testplayer";
 
+let displayNames = [];
+
 const handDiv = document.createElement("div");
 handDiv.id = "hand";
 
@@ -137,10 +139,14 @@ socket.onmessage = (event) => {
         })
         const testStack = createStack([handDiv, spacer, backButton], 'testStack');
         gameArea.appendChild(testStack);
-    } else if (messageType === "confirmPokerQueued") {
+    } else if (messageType === "invitePoker") {
         if (pokerQueued) {
-            socket.send(jsonMessage("confirmPokerQueued", 0));
+            console.log("poker accepted")
+            socket.send(jsonMessage("acceptPoker", 0));
         }
+    } else if (messageType === "namesList") {
+        displayNames = data.names;
+        console.log(`received display names: ${displayNames}`);
     }
 }
 
@@ -190,7 +196,7 @@ window.onload = () => {
     gameArea.appendChild(loadingDiv);
     const loadingText = document.createElement("p");
     loadingDiv.appendChild(loadingText);
-    let loadingReference = setInterval(() => loadingScreen(loadingReference, loadingDiv, loadingText), 5);
+    requestAnimationFrame(() => {loadingScreen(loadingDiv, loadingText)});
     for (let i = 2; i <= 14; i++) {
         for (let j = 0; j < suits.length; j++) {
             const image = new Image();
@@ -204,12 +210,13 @@ window.onload = () => {
 
 }
 
-function loadingScreen(intervalReference, loadingDiv, loadingText) {
+function loadingScreen(loadingDiv, loadingText) {
     loadingText.textContent = "Loading assets... " + assetsLoaded + "/" + totalAssets;
     if (assetsLoaded >= totalAssets) { // Start Game Loop
         loadingDiv.remove();
         gameArea.append(mainMenu);
-        clearInterval(intervalReference);
+    } else {
+        requestAnimationFrame(() => {loadingScreen(loadingDiv, loadingText)});
     }
 }
 
@@ -221,6 +228,7 @@ function dealTest(previousPage) {
 let pokerQueued = false; 
 
 function requestPoker(previousPage) {
+    console.log("queueing poker");
     previousPage.remove();
     const loadingText = createHeading("waiting for game", 1);
     const backButton = createButton("back");
@@ -228,6 +236,8 @@ function requestPoker(previousPage) {
         loadingStack.remove();
         gameArea.appendChild(mainMenu);
         pokerQueued = false; 
+        socket.send(jsonMessage("leavePoker", 0));
+        console.log("left poker/queue")
     })
     const loadingStack = createStack([loadingText, backButton], "loading-stack");
     gameArea.appendChild(loadingStack);
