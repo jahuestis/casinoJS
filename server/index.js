@@ -37,22 +37,21 @@ class PokerGame {
                     player.hand.push(this.deck.splice(randomIndex, 1)[0]);
                 }
             }
+            player.ws.send(jsonHand(player.hand));
         })
     }
 
     startRound() {
-        this.round += 1;
-        this.roundState = 1;
-        this.restoreDeck();
-        this.deal();
+        if (this.roundState == 0 && this.players.length > 1) {
+            this.round += 1;
+            this.roundState = 1;
+            console.log(`Starting round ${this.round} with ${this.players.length} players`);
+            this.broadcastToPlayers(jsonMessage("roundStart", 0));
+            this.restoreDeck();
+            this.deal();
+        }
+        
     }
-
-
-    addPlayer(ws, name) {
-        const player = new PokerPlayer(ws, name);
-        this.players.push(player);
-    }
-
 
     addToQueue(ws, name) {
         const player = new PokerPlayer(ws, name);
@@ -78,15 +77,32 @@ class PokerGame {
         this.playerQueue = this.playerQueue.filter(player => player.ws !== ws);
         this.purgatory = this.purgatory.filter(player => player.ws !== ws);
         this.players = this.players.filter(player => player.ws !== ws);
-        this.sendNames();
+        this.broadcastNames();
+        if (this.players.length <= 1) {
+            this.broadcastToPlayers(jsonMessage("roundUnready", 0));
+        }
     }
 
     advanceFromPurgatory(ws) {
-        const player = this.getFromPurgatory(ws);
-        if (player) {
-            this.players.push(player);
-            this.purgatory = this.purgatory.filter(player => player.ws !== ws);
-            this.sendNames();
+        if (this.roundState == 0) {
+            if (this.players.length < this.maxPlayers) {
+                const player = this.getFromPurgatory(ws);
+            if (player) {
+                this.players.push(player);
+                this.purgatory = this.purgatory.filter(player => player.ws !== ws);
+                this.broadcastNames();
+                if (this.players.length > 1) {
+                    this.broadcastToPlayers(jsonMessage("roundReady", 0));
+                }
+            }
+            } else {
+                ws.send(jsonError("game full"));
+            }
+            
+        } else {
+            console.log("matchmaking timeout");
+            this.removePlayer(ws);
+            ws.send(jsonError("matchmaking timeout"));
         }
     }
 
@@ -97,7 +113,7 @@ class PokerGame {
                 const player = this.playerQueue.shift();
                 this.purgatory.push(player);
                 player.ws.send(jsonMessage("invitePoker", 0));
-                console.log(`${player.name} invited to poker and moved to purgatory to await acception`);
+                console.log(`${player.name} invited to poker and moved to purgatory to await confirmation`);
             }
             // Increment time in purgatory
             for (let i = 0; i < this.purgatory.length; i++) {
@@ -108,24 +124,27 @@ class PokerGame {
                     console.log(`${player.name} did not accept invitation, purged`);
                 }
             }
-
             
         }
+
         //console.log(`queue: ${this.playerQueue}`);
         //console.log(`purgatory: ${this.purgatory}`);
         //console.log(`players: ${this.players}`);
     }
 
-    sendNames() {
+    broadcastNames() {
         // send list display names to all current players
         const playerNames = []
         this.players.forEach(player => {
             playerNames.push(player.name);
         }) 
+        this.broadcastToPlayers(jsonNamesList(playerNames));
+    }
 
+    broadcastToPlayers(message) {
         this.players.forEach(player => {
-            player.ws.send(jsonNamesList(playerNames));
-        }) 
+            player.ws.send(message);
+        })
     }
 
 }
@@ -146,7 +165,7 @@ class PokerPlayer {
 let clients = new Map();
 let poker = new PokerGame();
 
-
+// listen and react for WS messages
 socket.on('connection', (ws) => {
     try {
         ws.send(jsonMessage('requestClient', 0));
@@ -169,13 +188,12 @@ socket.on('connection', (ws) => {
                 poker.addToQueue(ws, clients.get(ws));
                 console.log(`${clients.get(ws)} queued for poker`);
             } else if (type === "acceptPoker") {
-                if (poker.roundState == 0) {
-                    poker.advanceFromPurgatory(ws);
-                    console.log(`${clients.get(ws)} accepted poker invitation`);
-                }
-
+                console.log(`${clients.get(ws)} accepted poker invitation`);
+                poker.advanceFromPurgatory(ws);
             } else if (type === "leavePoker") {
                 poker.removePlayer(ws);
+            } else if (type === "startRound") {
+                poker.startRound();
             } else {
                 throw new Error(`Unknown message type: ${type}`);
             }
@@ -210,9 +228,15 @@ function jsonNamesList(names) {
     });
 }
 
-function jsonHand(client) {
+function jsonError(error) {
+    return jsonMessage("error", {
+        error: error
+    });
+}
+
+function jsonHand(hand) {
     return jsonMessage("hand", {
-        hand: [Math.floor(Math.random() * 52), Math.floor(Math.random() * 52)]
+        hand: hand
     });
 
 }

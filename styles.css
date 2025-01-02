@@ -28,6 +28,15 @@ p {
     font-size: 1.2em;
 }
 
+button {
+    color: lime;
+    text-align: center;
+    border: .15em solid lime;
+    background-color: transparent;
+    font-size: 2em;
+    padding: .25em .5em .25em .5em;
+    margin: .15em;   
+}
 .clickable:active, button:active {
     transform: scale(0.95); /* Slightly shrink the button */
 
@@ -47,8 +56,8 @@ img {
 #game {
     
     padding: 2px;
-    width: 75vw;
-    height: 75vh;
+    width: 80vw;
+    height: 80vh;
     margin: auto;
     display: flex;
     align-items: center;
@@ -61,28 +70,25 @@ img {
     flex-direction: column;
 }
 
+#flex-row {
+    display: flex;
+    flex-direction: row;
+}
+
 #loading-div {
     text-align: center;
     display: flex;
 }
 
-#game-button {
-    color: lime;
-    text-align: center;
-    border: .15em solid lime;
-    background-color: transparent;
-    font-size: 2em;
-    padding: .25em .5em .25em .5em;
-    margin: .15em;   
-}
+
 
 #hand {
     display: flex;
     flex-direction: row;
 }
 
-.position-bottom {
-    margin-top: 40px;
+#preview-players {
+    margin-top: 2em;
 }
 
 .cards {
