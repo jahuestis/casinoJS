@@ -105,14 +105,14 @@ class loadingHeading {
     }
 
     startAnimation(speed, length) {
-        console.log("starting loading animation");
+        //console.log("starting loading animation");
         this.animationFrame = 0;
         this.animationReference = setInterval(() => this.animate(length), speed);
         setTimeout(() => this.animationSafeguard(), 5000);
     }
 
     animate(length) {
-        console.log("animating");
+        //console.log("animating");
         this.element.textContent = (this.text + ".".repeat((this.animationFrame += 1) % length));
     }
 
@@ -125,7 +125,7 @@ class loadingHeading {
     animationSafeguard() { // clear animation interval if element is not in dom
         if (!document.contains(this.element)) {
             this.stopAnimation();
-            console.log('Element not in dom, animation interval cleared');
+            //console.log('Element not in dom, animation interval cleared');
         } else {
             setTimeout(() => this.animationSafeguard(), 5000);
         }
