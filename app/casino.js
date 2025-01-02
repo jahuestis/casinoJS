@@ -179,7 +179,9 @@ function listString(list) {
     let str = "";
     for (let i = 0; i < list.length; i++) {
         str += `${list[i]}`;
-        if (i < list.length - 1) {
+        if (i == list.length - 2) {
+            str += " & ";
+        } else if (i < list.length - 1) {
             str += ", ";
         }
     }
@@ -187,7 +189,7 @@ function listString(list) {
 }
 
 function previewPlayersString() {
-    return `${playerNames.length} in game: ${listString(playerNames)}`
+    return `${playerNames.length} players in game: ${listString(playerNames)}`
 }
 
 const chipsButton = createButton("get chips");
