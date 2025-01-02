@@ -155,7 +155,7 @@ function pokerReadyScreen() {
     while (gameArea.firstChild) {
         gameArea.firstChild.remove();
     }
-    const ready = createHeading("game ready")
+    const ready = createHeading(previewPlayersString(), 1, "preview-players")
     const backButton = createButton("back");
     backButton.addEventListener("click", () => {
         readyStack.remove();
@@ -164,14 +164,13 @@ function pokerReadyScreen() {
         socket.send(jsonMessage("leavePoker", 0));
         console.log("left poker/queue")
     })
-    const playButton = createButton("play");
-    playButton.addEventListener("click", () => {
+    const startButton = createButton("start", "start-button");
+    startButton.addEventListener("click", () => {
         console.log("requesting round start");
         socket.send(jsonMessage("startRound", 0));
     })
-    const buttonDiv = createDiv([backButton, playButton], "ready-buttons");
-    const players = createHeading(previewPlayersString(), 4, "preview-players");
-    const readyStack = createDiv([ready, buttonDiv, players]);
+    const buttonDiv = createDiv([backButton, startButton], "ready-buttons");
+    const readyStack = createDiv([ready, buttonDiv]);
     gameArea.appendChild(readyStack);
 }
 
@@ -189,7 +188,7 @@ function listString(list) {
 }
 
 function previewPlayersString() {
-    return `${playerNames.length} players in game: ${listString(playerNames)}`
+    return `in game: ${listString(playerNames)}`
 }
 
 const chipsButton = createButton("get chips");
@@ -249,11 +248,13 @@ socket.onmessage = (event) => {
         console.log(`received display names: ${playerNames}`);
     } else if (messageType === "roundReady") {
         if (pokerQueued && !document.getElementById("start-round")) {
-            console.log("round ready to start, adding start button");
+            console.log("round ready to start");
             pokerReadyScreen();
         }
     } else if (messageType === "roundUnready") {
-        pokerQueueScreen(false);
+        if (pokerQueued) {
+            pokerQueueScreen(false);
+        }
     } else if (messageType === "roundStart") {
         console.log("round started!");
         while (gameArea.firstChild) {
