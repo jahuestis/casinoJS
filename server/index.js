@@ -78,7 +78,7 @@ class PokerGame {
         this.purgatory = this.purgatory.filter(player => player.ws !== ws);
         this.players = this.players.filter(player => player.ws !== ws);
         this.broadcastNames();
-        if (this.players.length <= 1) {
+        if (this.players.length <= 1 && this.roundState == 0) {
             this.broadcastToPlayers(jsonMessage("roundUnready", 0));
         }
     }
@@ -87,14 +87,14 @@ class PokerGame {
         if (this.roundState == 0) {
             if (this.players.length < this.maxPlayers) {
                 const player = this.getFromPurgatory(ws);
-            if (player) {
-                this.players.push(player);
-                this.purgatory = this.purgatory.filter(player => player.ws !== ws);
-                this.broadcastNames();
-                if (this.players.length > 1) {
-                    this.broadcastToPlayers(jsonMessage("roundReady", 0));
+                if (player) {
+                    this.players.push(player);
+                    this.purgatory = this.purgatory.filter(player => player.ws !== ws);
+                    this.broadcastNames();
+                    if (this.players.length > 1) {
+                        this.broadcastToPlayers(jsonMessage("roundReady", 0));
+                    }
                 }
-            }
             } else {
                 ws.send(jsonError("game full"));
             }
