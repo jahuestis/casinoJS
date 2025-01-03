@@ -1,3 +1,5 @@
+
+const { v4: uuidv4 } = require('uuid');
 const WebSocketServer = require('ws').Server;
 const socket = new WebSocketServer({ 
     port: 3000, 
@@ -37,7 +39,11 @@ class PokerGame {
                     player.hand.push(this.deck.splice(randomIndex, 1)[0]);
                 }
             }
-            player.ws.send(jsonHand(player.hand));
+            try {
+                player.ws.send(jsonHand(player.hand));
+            } catch (error) {
+                console.log(error);
+            }
         })
     }
 
@@ -53,14 +59,13 @@ class PokerGame {
         
     }
 
-    addToQueue(ws, name) {
-        const player = new PokerPlayer(ws, name);
+    addToQueue(player) {
         this.playerQueue.push(player);
     }
 
 
-    getPlayer(ws) {
-        const player = this.players.find(player => player.ws === ws);
+    getPlayer(id) {
+        const player = this.players.find(player => player.id === id);
         if (player) {
             return player;
         } else {
@@ -68,41 +73,58 @@ class PokerGame {
         }
     }
 
-    getFromPurgatory(ws) {
-        const player = this.purgatory.find(player => player.ws === ws);
-        return player;
+    getFromPurgatory(id) {
+        const player = this.purgatory.find(player => player.id === id);
+        if (player) {
+            return player;
+        } else {
+            return null;
+        }
     }
 
-    removePlayer(ws) {
-        this.playerQueue = this.playerQueue.filter(player => player.ws !== ws);
-        this.purgatory = this.purgatory.filter(player => player.ws !== ws);
-        this.players = this.players.filter(player => player.ws !== ws);
+    removePlayer(id) {
+        this.playerQueue = this.playerQueue.filter(player => player.id !== id);
+        this.purgatory = this.purgatory.filter(player => player.id !== id);
+        this.players = this.players.filter(player => player.id !== id);
         this.broadcastNames();
         if (this.players.length <= 1 && this.roundState == 0) {
             this.broadcastToPlayers(jsonMessage("roundUnready", 0));
         }
     }
 
-    advanceFromPurgatory(ws) {
-        if (this.roundState == 0) {
-            if (this.players.length < this.maxPlayers) {
-                const player = this.getFromPurgatory(ws);
-                if (player) {
-                    this.players.push(player);
-                    this.purgatory = this.purgatory.filter(player => player.ws !== ws);
-                    this.broadcastNames();
-                    if (this.players.length > 1) {
-                        this.broadcastToPlayers(jsonMessage("roundReady", 0));
+    advanceFromPurgatory(id) {
+        const player = this.getFromPurgatory(id);
+
+        if (player) {
+            if (this.roundState == 0) {
+                if (this.players.length < this.maxPlayers) {
+                    if (player) {
+                        this.players.push(player);
+                        this.purgatory = this.purgatory.filter(player => player.id !== id);
+                        this.broadcastNames();
+                        if (this.players.length > 1) {
+                            this.broadcastToPlayers(jsonMessage("roundReady", 0));
+                        }
+                    }
+                } else {
+                    try {
+                        player.ws.send(jsonError("game full"));
+                    } catch (error) {
+                        console.log(error);
                     }
                 }
+                
             } else {
-                ws.send(jsonError("game full"));
+                console.log("matchmaking timeout");
+                this.removePlayer(id);
+                try {
+                    player.ws.send(jsonError("matchmaking timeout"));
+                } catch (error) {
+                    console.log(error);
+                }
             }
-            
         } else {
-            console.log("matchmaking timeout");
-            this.removePlayer(ws);
-            ws.send(jsonError("matchmaking timeout"));
+            console.log("player not in purgatory");
         }
     }
 
@@ -112,15 +134,19 @@ class PokerGame {
             while (this.players.length < this.maxPlayers && this.playerQueue.length > 0) {
                 const player = this.playerQueue.shift();
                 this.purgatory.push(player);
-                player.ws.send(jsonMessage("invitePoker", 0));
-                console.log(`${player.name} invited to poker and moved to purgatory to await confirmation`);
+                try {
+                    player.ws.send(jsonMessage("invitePoker", 0));
+                    console.log(`${player.name} invited to poker and moved to purgatory to await confirmation`);
+                } catch (error) {
+                    console.log(error);
+                }
             }
             // Increment time in purgatory
             for (let i = 0; i < this.purgatory.length; i++) {
                 const player = this.purgatory[i];
                 player.incrementTimeInPurgatory();
                 if (player.timeInPurgatory > 6) {
-                    this.removePlayer(player.ws);
+                    this.removePlayer(player.id);
                     console.log(`${player.name} did not accept invitation, purged`);
                 }
             }
@@ -143,14 +169,19 @@ class PokerGame {
 
     broadcastToPlayers(message) {
         this.players.forEach(player => {
-            player.ws.send(message);
+            try {
+                player.ws.send(message);
+            } catch (error) {
+                console.log(error);
+            }
         })
     }
 
 }
 
 class PokerPlayer {
-    constructor(ws, name) {
+    constructor(id, ws, name) {
+        this.id = id;
         this.ws = ws;
         this.name = name;
         this.hand = [];
@@ -160,6 +191,15 @@ class PokerPlayer {
     incrementTimeInPurgatory() {
         this.timeInPurgatory += 1;
     }
+    
+    resetTimeInPurgatory() {
+        this.timeInPurgatory = 0;
+    }
+
+    updateWS(ws) {
+        this.ws = ws;
+    }
+
 }
 
 let clients = new Map();
@@ -168,7 +208,7 @@ let poker = new PokerGame();
 // listen and react for WS messages
 socket.on('connection', (ws) => {
     try {
-        ws.send(jsonMessage('requestClient', 0));
+        ws.send(jsonRequestClient(uuidv4()));
     } catch (error) {
         console.log(error);
     }
@@ -179,19 +219,20 @@ socket.on('connection', (ws) => {
             const type = messageJSON.type;
             const data = messageJSON.data;
             if (type === "clientConnected") {
-                clients.set(ws, data.name + `${testPlayerCounter++}`);
-                console.log(`${clients.get(ws)} connected`);
-            } else if (type === "requestHand") {
-                console.log('Client requested hand')
-                ws.send(jsonHand(ws));
+                if (clients.has(data.id)) {
+                    clients(id).updateWS(ws);
+                } else {
+                    clients.set(data.id, new PokerPlayer(data.id, ws, data.name + testPlayerCounter++));
+                }
+                console.log(`${clients.get(data.id).name} connected`);
             } else if (type === "queuePoker") {
-                poker.addToQueue(ws, clients.get(ws));
-                console.log(`${clients.get(ws)} queued for poker`);
+                poker.addToQueue(clients.get(data.id));
+                console.log(`${clients.get(data.id).name} queued for poker`);
             } else if (type === "acceptPoker") {
-                console.log(`${clients.get(ws)} accepted poker invitation`);
-                poker.advanceFromPurgatory(ws);
+                console.log(`${clients.get(data.id).name} accepted poker invitation`);
+                poker.advanceFromPurgatory(data.id);
             } else if (type === "leavePoker") {
-                poker.removePlayer(ws);
+                poker.removePlayer(data.id);
             } else if (type === "startRound") {
                 poker.startRound();
             } else {
@@ -204,13 +245,11 @@ socket.on('connection', (ws) => {
     });
 
     ws.on('close', () => {
-        clients.delete(ws);
         console.log('Client disconnected');
-        poker.removePlayer(ws);
     });
 
     ws.on('error', (error) => {
-        console.error(`Error on channel ${clients.get(ws)}: ${error.message}`);
+        console.error(error.message);
     });
 
 });
@@ -219,6 +258,12 @@ function jsonMessage(type, data) {
     return JSON.stringify({
         type: type,
         data: data
+    });
+}
+
+function jsonRequestClient(id) {
+    return jsonMessage("requestClient", {
+        id: id
     });
 }
 

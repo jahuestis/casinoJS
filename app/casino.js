@@ -4,6 +4,7 @@ const chipsCounter = document.getElementById("chips-counter");
 
 let chips = 0;
 let displayName = "anon";
+let playerId;
 
 let playerNames = [];
 
@@ -143,7 +144,7 @@ function pokerQueueScreen() {
         queueStack.remove();
         gameArea.appendChild(mainMenu);
         pokerQueued = false; 
-        socket.send(jsonMessage("leavePoker", 0));
+        socket.send(jsonLeavePoker());
         console.log("left poker/queue")
     })
     const buttonDiv = createDiv([backButton], "queue-buttons");
@@ -161,7 +162,7 @@ function pokerReadyScreen() {
         readyStack.remove();
         gameArea.appendChild(mainMenu);
         pokerQueued = false; 
-        socket.send(jsonMessage("leavePoker", 0));
+        socket.send(jsonLeavePoker());
         console.log("left poker/queue")
     })
     const startButton = createButton("start", "start-button");
@@ -208,7 +209,10 @@ socket.onmessage = (event) => {
     const messageType = message.type;
     const data = message.data;
     if (messageType === "requestClient") {
-        socket.send(jsonConnect());
+        if (!playerId) {
+            playerId = data.id;
+        }
+        socket.send(jsonConnect(displayName, playerId));
     }else if (messageType === "hand") {
         const newHand = data.hand;
         console.log(`received hand: ${newHand}`);
@@ -229,7 +233,7 @@ socket.onmessage = (event) => {
     } else if (messageType === "invitePoker") {
         if (pokerQueued) {
             console.log("poker accepted")
-            socket.send(jsonMessage("acceptPoker", 0));
+            socket.send(jsonAcceptPoker());
         } 
     } else if (messageType === "error") {
         while (gameArea.firstChild) {
@@ -265,19 +269,29 @@ socket.onmessage = (event) => {
 }
 
 
-function jsonConnect() {
+function jsonConnect(name, id) {
     return jsonMessage("clientConnected", {
-        name: displayName
-    });
-}
-function jsonRequestHand(size) {
-    return jsonMessage("requestHand", {
-        size: size
+        name: name,
+        id: id
     });
 }
 
 function jsonQueuePoker() {
-    return jsonMessage("queuePoker", 0);
+    return jsonMessage("queuePoker", {
+        id: playerId
+    });
+}
+
+function jsonAcceptPoker() {
+    return jsonMessage("acceptPoker", {
+        id: playerId
+    });
+}
+
+function jsonLeavePoker() {
+    return jsonMessage("leavePoker", {
+        id: playerId
+    });
 }
 
 function jsonMessage(type, data) {
@@ -304,6 +318,11 @@ window.onload = () => {
         }
         mouseDown = false;
     });
+
+    // window close
+    window.addEventListener('beforeunload', (event) => {
+        socket.send(jsonLeavePoker());
+    })
 
     // load card images
     const loadingText = document.createElement("p");
@@ -333,10 +352,6 @@ function loadingScreen(loadingDiv, loadingText) {
     }
 }
 
-function dealTest(previousPage) {
-    previousPage.remove();
-    socket.send(jsonRequestHand(2));
-}
 
 let pokerQueued = false; 
 
