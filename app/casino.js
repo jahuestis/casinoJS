@@ -5,6 +5,7 @@ const chipsCounter = document.getElementById("chips-counter");
 let chips = 0;
 let displayName = "anon";
 let playerId;
+let myTurn = false;
 
 let playerNames = [];
 
@@ -30,7 +31,7 @@ let assetsLoaded = 0;
 let deltaTime = 0;
 let lastUpdateTime = 0;
 
-let hand = [];
+let hole = [];
 
 class PokerCard {
     constructor(card, faceUp, element = null) {
@@ -213,22 +214,22 @@ socket.onmessage = (event) => {
             playerId = data.id;
         }
         socket.send(jsonConnect(displayName, playerId));
-    }else if (messageType === "hand") {
-        const newHand = data.hand;
-        console.log(`received hand: ${newHand}`);
-        hand = [];
-        for (let i = 0; i < newHand.length; i++) {
-            hand.push(createCardWithElement(newHand[i], true));
-            hand[i].element.addEventListener("click", () => {
-                hand[i].flip();
+    }else if (messageType === "hole") {
+        const newHole = data.hole;
+        console.log(`received hole: ${newHole}`);
+        hole = [];
+        for (let i = 0; i < newHole.length; i++) {
+            hole.push(createCardWithElement(newHole[i], true));
+            hole[i].element.addEventListener("click", () => {
+                hole[i].flip();
             });
         }
-        const handDiv = document.createElement("div");
-        handDiv.id = "hand";
-        for (let i = 0; i < hand.length; i++) {
-            handDiv.appendChild(hand[i].element);
+        const holeDiv = document.createElement("div");
+        holeDiv.id = "hole";
+        for (let i = 0; i < hole.length; i++) {
+            holeDiv.appendChild(hole[i].element);
         }
-        const testStack = createDiv([handDiv], 'testStack');
+        const testStack = createDiv([holeDiv], 'testStack');
         gameArea.appendChild(testStack);
     } else if (messageType === "invitePoker") {
         if (pokerQueued) {
@@ -265,6 +266,14 @@ socket.onmessage = (event) => {
             gameArea.removeChild(gameArea.firstChild);
         }
         pokerQueued = false;
+    } else if (messageType === "yourTurn") {
+        if (!myTurn) console.log("your turn");
+        myTurn = true;
+    } else if (messageType === "notYourTurn") {
+        if (myTurn) console.log("turn over");
+        myTurn = false;
+    } else {
+        console.log(`unknown message type: ${messageType}`);
     }
 }
 

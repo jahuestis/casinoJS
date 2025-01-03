@@ -7,19 +7,22 @@ const socket = new WebSocketServer({
 let testPlayerCounter = 0;
 
 class PokerGame {
-    constructor(maxPlayers = 8) {
-        this.maxPlayers = maxPlayers;
+    constructor() {
+        this.maxPlayers = 8;
         this.round = 0;
         this.roundState = 0; // 0 = waiting for round start, 1 = round active
         this.playerQueue = [];
         this.purgatory = [];
         this.players = [];
+        this.turn;
         this.deck;
         this.restoreDeck();
 
         this.updateLoop = setInterval(() => {
             this.update();
         }, 1000);
+
+        this.idsAtStart = [];
 
     }
 
@@ -32,15 +35,15 @@ class PokerGame {
 
     deal(count = 2) {
         this.players.forEach(player => {
-            player.hand = [];
+            player.hole = [];
             for (let i = 0; i < count; i++) {
                 if (this.deck.length > 0) {
                     const randomIndex = Math.floor(Math.random() * this.deck.length);
-                    player.hand.push(this.deck.splice(randomIndex, 1)[0]);
+                    player.hole.push(this.deck.splice(randomIndex, 1)[0]);
                 }
             }
             try {
-                player.ws.send(jsonHand(player.hand));
+                player.ws.send(jsonHole(player.hole));
             } catch (error) {
                 console.log(error);
             }
@@ -49,6 +52,11 @@ class PokerGame {
 
     startRound() {
         if (this.roundState == 0 && this.players.length > 1) {
+            this.idsAtStart = [];
+            this.players.forEach(player => {
+                this.idsAtStart.push(player.id);   
+            });
+            this.turn = this.idsAtStart[0];
             this.round += 1;
             this.roundState = 1;
             console.log(`Starting round ${this.round} with ${this.players.length} players`);
@@ -128,6 +136,39 @@ class PokerGame {
         }
     }
 
+    sendTurns() {
+        this.players.forEach(player => {
+            try {
+                if (player.id == this.turn) {
+                    player.ws.send(jsonYourTurn());
+                } else {
+                    player.ws.send(jsonNotYourTurn());
+                }
+            } catch (error) {
+                console.log(error);
+            }
+        })
+            
+    }
+
+    nextTurn() {
+        let turnIndex = 0;
+        for (let i = 0; i < this.idsAtStart.length; i++) {
+            if (this.idsAtStart[i] == this.turn) {
+                turnIndex = (i + 1) % this.idsAtStart.length;
+            }
+            break;
+        }
+
+        let nextTurn = this.idsAtStart[turnIndex];
+        while (!this.getPlayer(nextTurn) && this.players.length > 0) {
+            turnIndex = (turnIndex + 1) % this.idsAtStart.length;
+            nextTurn = this.idsAtStart[turnIndex];
+        }
+
+        this.turn = nextTurn;
+    }
+
     update() {
         if (this.roundState == 0) {
             // Move players to purgatory for queue confirmation if space available in game
@@ -152,6 +193,9 @@ class PokerGame {
                 }
             }
             
+        } else if (this.roundState == 1) {
+            this.sendTurns();
+            this.nextTurn();
         }
 
         if (this.players.length == 0) {
@@ -164,6 +208,7 @@ class PokerGame {
         //console.log(`queue: ${this.playerQueue}`);
         //console.log(`purgatory: ${this.purgatory}`);
         //console.log(`players: ${this.players}`);
+        //console.log(this.roundState);
     }
 
     broadcastNames() {
@@ -192,7 +237,7 @@ class PokerPlayer {
         this.id = id;
         this.ws = ws;
         this.name = name;
-        this.hand = [];
+        this.hole = [];
         this.timeInPurgatory = 0;
     }
 
@@ -240,6 +285,7 @@ socket.on('connection', (ws) => {
                 console.log(`${clients.get(data.id).name} accepted poker invitation`);
                 poker.advanceFromPurgatory(data.id);
             } else if (type === "leavePoker") {
+                console.log(`${clients.get(data.id).name} left poker/queue`);
                 poker.removePlayer(data.id);
             } else if (type === "startRound") {
                 poker.startRound();
@@ -287,9 +333,17 @@ function jsonError(error) {
     });
 }
 
-function jsonHand(hand) {
-    return jsonMessage("hand", {
-        hand: hand
+function jsonHole(hole) {
+    return jsonMessage("hole", {
+        hole: hole
     });
 
+}
+
+function jsonYourTurn() {
+    return jsonMessage("yourTurn", {});
+}
+
+function jsonNotYourTurn() {
+    return jsonMessage("notYourTurn", {});
 }
