@@ -134,6 +134,7 @@ class PokerGame {
             while (this.players.length < this.maxPlayers && this.playerQueue.length > 0) {
                 const player = this.playerQueue.shift();
                 this.purgatory.push(player);
+                player.resetTimeInPurgatory();
                 try {
                     player.ws.send(jsonMessage("invitePoker", 0));
                     console.log(`${player.name} invited to poker and moved to purgatory to await confirmation`);
@@ -151,6 +152,13 @@ class PokerGame {
                 }
             }
             
+        }
+
+        if (this.players.length == 0) {
+            if (this.roundState != 0) {
+                console.log("All players disconnected, restarting game");
+            }
+            this.roundState = 0;
         }
 
         //console.log(`queue: ${this.playerQueue}`);
