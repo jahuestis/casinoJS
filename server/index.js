@@ -16,6 +16,7 @@ class PokerGame {
         this.players = [];
         this.turn;
         this.deck;
+        this.river = [];
         this.restoreDeck();
 
         this.updateLoop = setInterval(() => {
@@ -48,6 +49,16 @@ class PokerGame {
                 console.log(error);
             }
         })
+
+        this.river = [];
+        for (let i = 0; i < 5; i++) {
+            if (this.deck.length > 0) {
+                const randomIndex = Math.floor(Math.random() * this.deck.length);
+                this.river.push(this.deck.splice(randomIndex, 1)[0]);
+            }
+        }
+        console.log(`River: ${this.river}`);
+
     }
 
     startRound() {
