@@ -70,7 +70,7 @@ img {
 
 #game {
     
-    height: 90vh;
+    height: 95vh;
     padding: 2px;
     margin: auto;
     display: flex;
@@ -104,12 +104,12 @@ img {
 #poker-stack, #chat-stack {
     display: flex;
     flex-direction: column;
-    justify-content: flex-end; 
+    border: 2px solid lime;
 }
 
 #chat-stack {
-    border: 2px solid lime;
-    flex: .33
+    flex: .33;
+    margin-right: 8px;
 }
 
 
@@ -120,8 +120,12 @@ img {
 #card-div {
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     flex: 1;
+}
+
+#river-div {
+    margin-bottom: 3vh;
 }
 
 #chat-div {
@@ -152,6 +156,7 @@ img {
 
 .cards {
     width: 18%;
+    max-width: 20vh;
     margin: .5%;
     padding: 0;
 }

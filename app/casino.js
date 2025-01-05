@@ -1,6 +1,5 @@
 
 const gameArea = document.getElementById("game");
-const chipsCounter = document.getElementById("chips-counter");
 
 let chips = 0;
 let displayName = "anon";
@@ -217,13 +216,15 @@ function previewPlayersString() {
     return `playing: ${listString(playerNames)}`
 }
 
+const title = createHeading("casinoJS");
+const chipsCounter = createHeading("chips: 0", 2, "chips-counter");
 const chipsButton = createButton("get chips");
 chipsButton.addEventListener("click", () => updateChips(5));
 const pokerButton = createButton("play poker");
 pokerButton.addEventListener("click", () => requestPoker(mainMenu));
 const blackjackButton = createButton("blackjack");
 const testButton = createButton("test");
-const mainMenu = createDiv([chipsButton, pokerButton]);
+const mainMenu = createDiv([title, pokerButton, chipsButton, chipsCounter]);
 testButton.addEventListener("click", () => dealTest(mainMenu));
 
 // -- Client --
@@ -280,9 +281,9 @@ socket.onmessage = (event) => {
         const holeDiv = createDiv([], "hole-div");
         const riverDiv = createDiv([], "river-div");
         const cardDiv = createDiv([riverDiv, holeDiv], "card-div");
-        const buttonDiv = createDiv(createActionButtons(), "button-div");
+        const buttonDiv = createDiv(createActionButtons(), "action-div");
         const turnIndicator = createHeading("", 2, "turn-indicator");
-        const pokerStack = createDiv([cardDiv, turnIndicator, buttonDiv], "poker-stack");
+        const pokerStack = createDiv([chipsCounter, cardDiv, turnIndicator, buttonDiv], "poker-stack");
         const pokerWrapper = createDiv([chatStack, pokerStack], "poker-wrapper");
         gameArea.appendChild(pokerWrapper);
         pokerQueued = false;
