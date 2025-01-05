@@ -37,6 +37,21 @@ button {
     padding: .25em .5em .25em .5em;
     margin: .15em;   
 }
+
+input {
+    color: lime;
+    text-align: center;
+    border: .15em solid lime;
+    background-color: transparent;
+    font-size: 2em;
+    padding: .25em .5em .25em .5em;
+    margin: .15em;   
+}
+
+#bet-input {
+    width: 5ch;
+}
+
 .clickable:active, button:active {
     transform: scale(0.95); /* Slightly shrink the button */
 
@@ -56,12 +71,13 @@ img {
 #game {
     
     padding: 2px;
-    width: 80vw;
+    width: 60vw;
     height: 80vh;
     margin: auto;
     display: flex;
     align-items: center;
     justify-content: center;
+    
 
 }
 
@@ -80,15 +96,82 @@ img {
     display: flex;
 }
 
+#poker-wrapper {
+    display: flex;
+    flex-direction:row;
+    justify-content: center; 
+    align-items: stretch;
+    
+    height: 80vh;
+    margin: 0;
+    padding: 0;
+}
 
+#poker-stack, #chat-stack {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end; 
+    align-items: stretch;
+}
 
-#hole {
+#chat-stack {
+    border: 2px solid lime;
+}
+
+#card-div {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    flex: 1;
+}
+
+#river-div {
+    
+    width: 45vw;
+}
+
+#hole-div {
     display: flex;
     flex-direction: row;
+    justify-content: center; 
+    align-items: center;
+    
+    width: 45vw;
+    margin: 0;
+    padding: 0;
+}
+
+#button-div {
+    height: 10vh;
+    
+    margin: 0;
+    padding: 0;
+}
+
+#chat-div {
+    width: 15vw;
+    flex: 1;
+    
+    margin: 0;
+    padding: 0;
+
+}
+
+#chat-input {
+    height: 10vh;
+    
+    margin: 0;
+    padding: 0;
+}
+
+#turn-indicator {
+    height: 1ch;
+    margin: 0px 0px 2rem 0px;
 }
 
 
 .cards {
-    width: 12em;
-    margin: 1vw;
+    width: 20%;
+    margin: 1%;
 }

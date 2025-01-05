@@ -14,16 +14,18 @@ class PokerGame {
         this.playerQueue = [];
         this.purgatory = [];
         this.players = [];
-        this.turn;
+        this.playersAtStart = [];
+        this.turnID;
         this.deck;
         this.river = [];
+        this.minRaise = 25;
+        this.ante = 25;
         this.restoreDeck();
 
         this.updateLoop = setInterval(() => {
             this.update();
         }, 1000);
 
-        this.idsAtStart = [];
 
     }
 
@@ -63,13 +65,15 @@ class PokerGame {
 
     startRound() {
         if (this.roundState == 0 && this.players.length > 1) {
-            this.idsAtStart = [];
+            this.playersAtStart = [];
             this.players.forEach(player => {
-                this.idsAtStart.push(player.id);   
+                this.playersAtStart.push(player);   
             });
-            this.turn = this.idsAtStart[0];
+            console.log(this.playersAtStart.length + ", " + this.players.length);
+            this.turnID = this.playersAtStart[0].id;
             this.round += 1;
             this.roundState = 1;
+            this.minRaise = 25;
             console.log(`Starting round ${this.round} with ${this.players.length} players`);
             this.broadcastToPlayers(jsonMessage("roundStart", 0));
             this.restoreDeck();
@@ -150,7 +154,7 @@ class PokerGame {
     sendTurns() {
         this.players.forEach(player => {
             try {
-                if (player.id == this.turn) {
+                if (player.id == this.turnID) {
                     player.ws.send(jsonYourTurn());
                 } else {
                     player.ws.send(jsonNotYourTurn());
@@ -164,20 +168,19 @@ class PokerGame {
 
     nextTurn() {
         let turnIndex = 0;
-        for (let i = 0; i < this.idsAtStart.length; i++) {
-            if (this.idsAtStart[i] == this.turn) {
-                turnIndex = (i + 1) % this.idsAtStart.length;
+        for (let i = 0; i < this.playersAtStart.length; i++) {
+            if (this.playersAtStart[i].id == this.turnID) {
+                turnIndex = i;
             }
             break;
         }
 
-        let nextTurn = this.idsAtStart[turnIndex];
-        while (!this.getPlayer(nextTurn) && this.players.length > 0) {
-            turnIndex = (turnIndex + 1) % this.idsAtStart.length;
-            nextTurn = this.idsAtStart[turnIndex];
-        }
+        do {
+            turnIndex = (turnIndex + 1) % this.playersAtStart.length;
+        } while (!this.getPlayer(this.playersAtStart[turnIndex].id) && this.players.length > 0)
 
-        this.turn = nextTurn;
+        this.turnID = this.getPlayer(this.playersAtStart[turnIndex].id).id;
+        console.log(`Next turn: ${turnIndex} ${this.turnID}`);
     }
 
     update() {

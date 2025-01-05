@@ -65,6 +65,13 @@ function createButton(text, id = "game-button") {
     return button;
 }
 
+function createInput(text = "", id = "raise-input") {
+    const input = document.createElement("input");
+    input.id = id;
+    input.value = text;
+    return input;
+}
+
 function createDiv(elements, id = "flex-stack") {
     const stack = document.createElement("div");
     stack.id = id;
@@ -88,6 +95,14 @@ function createCardWithElement(card, faceUp = false) {
     return new PokerCard(card, faceUp, element);
 }
 
+function createActionButtons() {
+    const buttons = [];
+    buttons.push(createInput("0", "bet-input"));
+    buttons.push(createButton("raise"));
+    buttons.push(createButton("call"));
+    buttons.push(createButton("fold"));
+    return buttons;
+}
 class loadingHeading {
     constructor(text = "", headingSize = 1, id = "loading-heading") {
         this.text = text;
@@ -214,23 +229,6 @@ socket.onmessage = (event) => {
             playerId = data.id;
         }
         socket.send(jsonConnect(displayName, playerId));
-    }else if (messageType === "hole") {
-        const newHole = data.hole;
-        console.log(`received hole: ${newHole}`);
-        hole = [];
-        for (let i = 0; i < newHole.length; i++) {
-            hole.push(createCardWithElement(newHole[i], true));
-            hole[i].element.addEventListener("click", () => {
-                hole[i].flip();
-            });
-        }
-        const holeDiv = document.createElement("div");
-        holeDiv.id = "hole";
-        for (let i = 0; i < hole.length; i++) {
-            holeDiv.appendChild(hole[i].element);
-        }
-        const testStack = createDiv([holeDiv], 'testStack');
-        gameArea.appendChild(testStack);
     } else if (messageType === "invitePoker") {
         if (pokerQueued) {
             console.log("poker accepted")
@@ -265,13 +263,40 @@ socket.onmessage = (event) => {
         while (gameArea.firstChild) {
             gameArea.removeChild(gameArea.firstChild);
         }
+        const chatDiv = createDiv([], "chat-div");
+        const chatInputDiv = createDiv([], "chat-input");
+        const chatStack = createDiv([chatDiv, chatInputDiv], "chat-stack");
+        const holeDiv = createDiv([], "hole-div");
+        const riverDiv = createDiv([], "river-div");
+        const cardDiv = createDiv([riverDiv, holeDiv], "card-div");
+        const buttonDiv = createDiv(createActionButtons(), "button-div");
+        const turnIndicator = createHeading(" ", 2, "turn-indicator");
+        const pokerStack = createDiv([cardDiv, turnIndicator, buttonDiv], "poker-stack");
+        const pokerWrapper = createDiv([chatStack, pokerStack], "poker-wrapper");
+        gameArea.appendChild(pokerWrapper);
         pokerQueued = false;
+    } else if (messageType === "hole") {
+        const newHole = data.hole;
+        console.log(`received hole: ${newHole}`);
+        hole = [];
+        for (let i = 0; i < newHole.length; i++) {
+            hole.push(createCardWithElement(newHole[i], true));
+            hole[i].element.addEventListener("click", () => {
+                hole[i].flip();
+            });
+        }
+        const holeDiv = document.getElementById("hole-div");
+        for (let i = 0; i < hole.length; i++) {
+            holeDiv.appendChild(hole[i].element);
+        }
     } else if (messageType === "yourTurn") {
         if (!myTurn) console.log("your turn");
         myTurn = true;
+        document.getElementById("turn-indicator").textContent = "your turn";
     } else if (messageType === "notYourTurn") {
         if (myTurn) console.log("turn over");
         myTurn = false;
+        document.getElementById("turn-indicator").textContent = " ";
     } else {
         console.log(`unknown message type: ${messageType}`);
     }
