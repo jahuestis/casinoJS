@@ -46,7 +46,7 @@ class PokerGame {
                 }
             }
             try {
-                player.ws.send(jsonHole(player.hole));
+                player.ws.send(jsonDeal(player.hole));
             } catch (error) {
                 console.log(error);
             }
@@ -340,8 +340,8 @@ function jsonError(error) {
     });
 }
 
-function jsonHole(hole) {
-    return jsonMessage("hole", {
+function jsonDeal(hole) {
+    return jsonMessage("deal", {
         hole: hole
     });
 

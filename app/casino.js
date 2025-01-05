@@ -58,33 +58,37 @@ class PokerCard {
 }
 
 // --Create common page elements--
-function createButton(text, id = "game-button") {
+function createButton(text, id = "game-button", classes = []) {
     const button = document.createElement("button");
     button.id = id;
+    button.classList.add(...classes);
     button.textContent = text;
     return button;
 }
 
-function createInput(text = "", id = "raise-input") {
+function createInput(text = "", id = "raise-input", classes = []) {
     const input = document.createElement("input");
     input.id = id;
+    input.classList.add(...classes);
     input.value = text;
     return input;
 }
 
-function createDiv(elements, id = "flex-stack") {
+function createDiv(elements, id = "flex-stack", classes = []) {
     const stack = document.createElement("div");
     stack.id = id;
     for (let i = 0; i < elements.length; i++) {
         stack.appendChild(elements[i]);
     }
+    stack.classList.add(...classes);
     return stack;
 }
 
-function createHeading(text, headingSize = 1, id = "game-heading") {
+function createHeading(text, headingSize = 1, id = "game-heading", classes = []) {
     const heading = document.createElement("h" + headingSize);
     heading.id = id;
     heading.textContent = text;
+    heading.classList.add(...classes);
     return heading;
 }
 
@@ -97,16 +101,16 @@ function createCardWithElement(card, faceUp = false) {
 
 function createActionButtons() {
     const buttons = [];
-    buttons.push(createInput("0", "bet-input"));
-    buttons.push(createButton("raise"));
-    buttons.push(createButton("call"));
-    buttons.push(createButton("fold"));
+    buttons.push(createInput("0", "bet-input", ["action"]));
+    buttons.push(createButton("raise", "game-button", ["action"]));
+    buttons.push(createButton("call", "game-button", ["action"]));
+    buttons.push(createButton("fold", "game-button", ["action"]));
     return buttons;
 }
 class loadingHeading {
-    constructor(text = "", headingSize = 1, id = "loading-heading") {
+    constructor(text = "", headingSize = 1, id = "loading-heading", classes = []) {
         this.text = text;
-        this.element = createHeading(this.text, headingSize, id);
+        this.element = createHeading(this.text, headingSize, id, classes);
         this.animationReference = null;
         this.animationFrame = 0;
     }
@@ -264,18 +268,20 @@ socket.onmessage = (event) => {
             gameArea.removeChild(gameArea.firstChild);
         }
         const chatDiv = createDiv([], "chat-div");
-        const chatInputDiv = createDiv([], "chat-input");
+        const chatInput = createInput("", "chat-input");
+        const chatSend = createButton("send", "chat-send");
+        const chatInputDiv = createDiv([chatInput,chatSend], "chat-input-div"); // chatInput, chatSend
         const chatStack = createDiv([chatDiv, chatInputDiv], "chat-stack");
         const holeDiv = createDiv([], "hole-div");
         const riverDiv = createDiv([], "river-div");
         const cardDiv = createDiv([riverDiv, holeDiv], "card-div");
         const buttonDiv = createDiv(createActionButtons(), "button-div");
-        const turnIndicator = createHeading(" ", 2, "turn-indicator");
+        const turnIndicator = createHeading("", 2, "turn-indicator");
         const pokerStack = createDiv([cardDiv, turnIndicator, buttonDiv], "poker-stack");
         const pokerWrapper = createDiv([chatStack, pokerStack], "poker-wrapper");
         gameArea.appendChild(pokerWrapper);
         pokerQueued = false;
-    } else if (messageType === "hole") {
+    } else if (messageType === "deal") {
         const newHole = data.hole;
         console.log(`received hole: ${newHole}`);
         hole = [];
@@ -289,6 +295,10 @@ socket.onmessage = (event) => {
         for (let i = 0; i < hole.length; i++) {
             holeDiv.appendChild(hole[i].element);
         }
+        const riverDiv = document.getElementById("river-div");
+        for (let i = 0; i < 5; i++) {
+            riverDiv.appendChild(createCardWithElement(0, false).element);
+        }
     } else if (messageType === "yourTurn") {
         if (!myTurn) console.log("your turn");
         myTurn = true;
@@ -296,7 +306,7 @@ socket.onmessage = (event) => {
     } else if (messageType === "notYourTurn") {
         if (myTurn) console.log("turn over");
         myTurn = false;
-        document.getElementById("turn-indicator").textContent = " ";
+        document.getElementById("turn-indicator").textContent = "";
     } else {
         console.log(`unknown message type: ${messageType}`);
     }
@@ -389,7 +399,7 @@ function loadingScreen(loadingDiv, loadingText) {
 
 let pokerQueued = false; 
 
-function requestPoker(previousPage) {
+function requestPoker() {
     console.log("queueing poker");
     pokerQueueScreen();
     socket.send(jsonQueuePoker());
