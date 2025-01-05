@@ -28,25 +28,17 @@ p {
     font-size: 1.2em;
 }
 
-button {
+button, input {
     color: lime;
     text-align: center;
-    border: .15em solid lime;
+    border: .3rem solid lime;
     background-color: transparent;
     font-size: 2rem;
-    padding: .25em .5em .25em .5em;
+    padding: .25em;
     margin: .15em;   
+    min-width: 6ch;
 }
 
-input {
-    color: lime;
-    text-align: center;
-    border: .15em solid lime;
-    background-color: transparent;
-    font-size: 2em;
-    padding: .25em .5em .25em .5em;
-    margin: .15em;   
-}
 
 #bet-input {
     width: 5ch;
@@ -63,10 +55,6 @@ a {
     margin: 10%;
 }
 
-img {
-    image-rendering: crisp-edges;
-    image-rendering: pixelated;
-}
 
 #game {
     
@@ -98,42 +86,37 @@ img {
     display: flex;
     flex-direction: row;
     min-height: 90vh;
-    width: 100rem;
+    min-width: 85%;
 }
 
-#poker-stack, #chat-stack {
+#poker-stack, #player-stack {
     display: flex;
     flex-direction: column;
-    border: 2px solid lime;
+    padding: .15rem;
+}
+
+#player-stack {
+    flex: .33;
+}
+
+#poker-stack {
+    flex: .66;
+    margin-left: 8px;
+    border: .3rem solid lime;
+}
+
+#player-info-div {
+    flex: .6;
+    border: .3rem solid lime;
+    margin-bottom: 8px;
 }
 
 #chat-stack {
-    flex: .33;
-    margin-right: 8px;
-}
-
-
-#poker-stack {
-    flex: .67;
-}
-
-#card-div {
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
-    flex: 1;
+    border: .3rem solid lime;
+    flex: .4;
 }
-
-#river-div, #hole-div {
-    display: flex;
-    flex: 1;
-    justify-content: center;
-}
-
-#hole-div {
-    margin-top: 3vh;
-}
-
 
 #chat-div {
     flex: 1;
@@ -153,18 +136,33 @@ img {
     width: 6ch;
 }
 
+#card-div {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    flex: 1;
+}
+
+#river-div, #hole-div {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+#hole-div {
+    margin-top: 3vh;
+}
+
+
 #turn-indicator {
     height: 2rem;
     margin: 1vh;
 }
 
-
-
-
 .cards {
-    width: 18%;
-    max-width: 20vh;
-    margin: auto .5% auto .5%; 
-    padding: 0;
+    width: 12rem;
+    margin: .25rem;
 }
 

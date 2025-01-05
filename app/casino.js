@@ -217,9 +217,9 @@ function previewPlayersString() {
 }
 
 const title = createHeading("casinoJS");
-const chipsCounter = createHeading("chips: 0", 2, "chips-counter");
+const chipsCounter = createHeading("chips: 0", 1, "chips-counter");
 const chipsButton = createButton("get chips");
-chipsButton.addEventListener("click", () => updateChips(5));
+chipsButton.addEventListener("click", () => updateChips(25));
 const pokerButton = createButton("play poker");
 pokerButton.addEventListener("click", () => requestPoker(mainMenu));
 const blackjackButton = createButton("blackjack");
@@ -273,18 +273,23 @@ socket.onmessage = (event) => {
         while (gameArea.firstChild) {
             gameArea.removeChild(gameArea.firstChild);
         }
+
         const chatDiv = createDiv([], "chat-div");
         const chatInput = createInput("", "chat-input");
         const chatSend = createButton("send", "chat-send");
-        const chatInputDiv = createDiv([chatInput,chatSend], "chat-input-div"); // chatInput, chatSend
+        const chatInputDiv = createDiv([chatInput,chatSend], "chat-input-div");
         const chatStack = createDiv([chatDiv, chatInputDiv], "chat-stack");
+        const playerInfoDiv = createDiv([], "player-info-div");
+
+        const playerStack = createDiv([playerInfoDiv, chatStack], "player-stack");
+
         const holeDiv = createDiv([], "hole-div");
         const riverDiv = createDiv([], "river-div");
         const cardDiv = createDiv([riverDiv, holeDiv], "card-div");
         const buttonDiv = createDiv(createActionButtons(), "action-div");
         const turnIndicator = createHeading("", 2, "turn-indicator");
         const pokerStack = createDiv([chipsCounter, cardDiv, turnIndicator, buttonDiv], "poker-stack");
-        const pokerWrapper = createDiv([chatStack, pokerStack], "poker-wrapper");
+        const pokerWrapper = createDiv([playerStack, pokerStack], "poker-wrapper");
         gameArea.appendChild(pokerWrapper);
         pokerQueued = false;
     } else if (messageType === "deal") {
