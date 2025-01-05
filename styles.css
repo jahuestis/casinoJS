@@ -70,13 +70,12 @@ img {
 
 #game {
     
+    height: 90vh;
     padding: 2px;
-    height: 80vh;
     margin: auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: blue;
 
 }
 
@@ -98,9 +97,8 @@ img {
 #poker-wrapper {
     display: flex;
     flex-direction: row;
-    height: 80vh;
-    border: 2px solid red;
-    width: 160ch
+    height: 90vh;
+    width: 100rem;
 }
 
 #poker-stack, #chat-stack {
@@ -123,39 +121,21 @@ img {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    
     flex: 1;
-    background-color:gray;
-}
-
-#river-div {
-    border: 2px solid purple;
-}
-
-#hole-div {
-    border: 2px solid red;
-}
-
-#button-div {
-    background-color: pink;
 }
 
 #chat-div {
     flex: 1;
-    margin: 0;
-    padding: 0;
-    background-color: green;
-
 }
 
 #chat-input-div {
-    border: 2px solid orange;
+    display: flex;
 }
 
 #chat-input {
     font-size: 2rem;
-    width: 60%;
     text-align: left;
+    width: 100%;
 }
 
 #chat-send {

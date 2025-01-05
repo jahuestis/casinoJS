@@ -34,13 +34,18 @@ let lastUpdateTime = 0;
 let hole = [];
 
 class PokerCard {
-    constructor(card, faceUp, element = null) {
+    constructor(card, faceUp, element = null, flippable = false) {
         this.card = card;
         this.faceUp = faceUp;
         this.element =  element
         this.image = this.faceUp ? cardImages[this.card] : cardBack;
         if (element) {
             this.element.src = this.image.src
+            if (flippable) {
+                this.element.addEventListener("click", () => {
+                    this.flip();
+                });
+            }
         }
     }
 
@@ -55,6 +60,13 @@ class PokerCard {
         this.element.src = this.image.src
     }
 
+}
+
+function createCardWithElement(card, faceUp = false, flippable = false) {
+    const element = document.createElement("img");
+    element.classList.add("cards");
+    element.classList.add("clickable");
+    return new PokerCard(card, faceUp, element, flippable);
 }
 
 // --Create common page elements--
@@ -90,13 +102,6 @@ function createHeading(text, headingSize = 1, id = "game-heading", classes = [])
     heading.textContent = text;
     heading.classList.add(...classes);
     return heading;
-}
-
-function createCardWithElement(card, faceUp = false) {
-    const element = document.createElement("img");
-    element.classList.add("cards");
-    element.classList.add("clickable");
-    return new PokerCard(card, faceUp, element);
 }
 
 function createActionButtons() {
@@ -209,7 +214,7 @@ function listString(list) {
 }
 
 function previewPlayersString() {
-    return `in game: ${listString(playerNames)}`
+    return `playing: ${listString(playerNames)}`
 }
 
 const chipsButton = createButton("get chips");
@@ -286,10 +291,7 @@ socket.onmessage = (event) => {
         console.log(`received hole: ${newHole}`);
         hole = [];
         for (let i = 0; i < newHole.length; i++) {
-            hole.push(createCardWithElement(newHole[i], true));
-            hole[i].element.addEventListener("click", () => {
-                hole[i].flip();
-            });
+            hole.push(createCardWithElement(newHole[i], true, true));
         }
         const holeDiv = document.getElementById("hole-div");
         for (let i = 0; i < hole.length; i++) {
@@ -297,7 +299,7 @@ socket.onmessage = (event) => {
         }
         const riverDiv = document.getElementById("river-div");
         for (let i = 0; i < 5; i++) {
-            riverDiv.appendChild(createCardWithElement(0, false).element);
+            riverDiv.appendChild(createCardWithElement(0, false, false).element);
         }
     } else if (messageType === "yourTurn") {
         if (!myTurn) console.log("your turn");
