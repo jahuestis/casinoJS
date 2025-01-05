@@ -14,9 +14,9 @@ class PokerGame {
         this.playerQueue = [];
         this.purgatory = [];
         this.players = [];
-        this.playersAtStart = [];
+        this.turnOrder = [];
         this.turnID;
-        this.deck;
+        this.deck = [];
         this.river = [];
         this.minRaise = 25;
         this.ante = 25;
@@ -65,12 +65,8 @@ class PokerGame {
 
     startRound() {
         if (this.roundState == 0 && this.players.length > 1) {
-            this.playersAtStart = [];
-            this.players.forEach(player => {
-                this.playersAtStart.push(player);   
-            });
-            console.log(this.playersAtStart.length + ", " + this.players.length);
-            this.turnID = this.playersAtStart[0].id;
+            this.turnOrder = this.players.map(player => player.id);
+            this.turnID = this.turnOrder[0];
             this.round += 1;
             this.roundState = 1;
             this.minRaise = 25;
@@ -78,7 +74,37 @@ class PokerGame {
             this.broadcastToPlayers(jsonMessage("roundStart", 0));
             this.restoreDeck();
             this.deal();
+            this.sendTurns();
         }
+        
+    }
+
+    sendTurns() {
+        this.players.forEach(player => {
+            try {
+                if (player.id == this.turnID) {
+                    player.ws.send(jsonYourTurn());
+                } else {
+                    player.ws.send(jsonNotYourTurn());
+                }
+            } catch (error) {
+                console.log(error);
+            }
+        })
+            
+    }
+
+    nextTurn() {
+        let turnIndex = 0;
+
+        for (let i = 0; i < this.turnOrder.length; i++) {
+            if (this.turnOrder[i] == this.turnID) {
+                turnIndex = i;
+            }
+        }
+        do {
+            this.turnID = this.turnOrder[(turnIndex += 1) % this.turnOrder.length];
+        } while (!this.getPlayer(this.turnID) && this.players.length > 0);
         
     }
 
@@ -151,38 +177,6 @@ class PokerGame {
         }
     }
 
-    sendTurns() {
-        this.players.forEach(player => {
-            try {
-                if (player.id == this.turnID) {
-                    player.ws.send(jsonYourTurn());
-                } else {
-                    player.ws.send(jsonNotYourTurn());
-                }
-            } catch (error) {
-                console.log(error);
-            }
-        })
-            
-    }
-
-    nextTurn() {
-        let turnIndex = 0;
-        for (let i = 0; i < this.playersAtStart.length; i++) {
-            if (this.playersAtStart[i].id == this.turnID) {
-                turnIndex = i;
-            }
-            break;
-        }
-
-        do {
-            turnIndex = (turnIndex + 1) % this.playersAtStart.length;
-        } while (!this.getPlayer(this.playersAtStart[turnIndex].id) && this.players.length > 0)
-
-        this.turnID = this.getPlayer(this.playersAtStart[turnIndex].id).id;
-        console.log(`Next turn: ${turnIndex} ${this.turnID}`);
-    }
-
     update() {
         if (this.roundState == 0) {
             // Move players to purgatory for queue confirmation if space available in game
@@ -209,7 +203,6 @@ class PokerGame {
             
         } else if (this.roundState == 1) {
             this.sendTurns();
-            this.nextTurn();
         }
 
         if (this.players.length == 0) {
