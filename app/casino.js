@@ -284,13 +284,16 @@ socket.onmessage = (event) => {
         while (gameArea.firstChild) {
             gameArea.removeChild(gameArea.firstChild);
         }
-        const chatDiv = createDiv([], "chat-div");
+        const chatDiv = createDiv([createHeading("beginning of chat", 2, "chat-message")], "chat-div");
         const chatInput = createInput("", "chat-input");
         const chatSend = createButton("send", "chat-send");
         function sendMessage() {
-            console.log(`sending chat message: ${chatInput.value}`);
-            socket.send(jsonChatMessage(chatInput.value));
-            chatInput.value = "";
+            const trimmedMessage = String(chatInput.value).trim();
+            if (trimmedMessage) {
+                console.log(`sending chat message: ${chatInput.value}`);
+                socket.send(jsonChatMessage(chatInput.value));
+                chatInput.value = "";
+            }
         }
         chatSend.addEventListener("click", () => sendMessage());
         chatInput.addEventListener("keydown", (event) => {
@@ -314,12 +317,13 @@ socket.onmessage = (event) => {
         const buttonDiv = createDiv(createActionButtons(), "action-div");
         const turnIndicator = createHeading("", 2, "turn-indicator");
         const pokerStack = createDiv([chipsCounter, cardDiv, turnIndicator, buttonDiv], "poker-stack");
-        const pokerWrapper = createDiv([playerStack, pokerStack], "poker-wrapper");
+        const pokerWrapper = createDiv([pokerStack], "poker-wrapper");
+        gameArea.appendChild(playerStack);
         gameArea.appendChild(pokerWrapper);
         pokerQueued = false;
 
         // fix chat height
-        //requestAnimationFrame(() => fixChatHeight());
+        requestAnimationFrame(() => fixChatHeight());
     } else if (messageType === "deal") {
         const newHole = data.hole;
         console.log(`received hole: ${newHole}`);
@@ -354,21 +358,21 @@ socket.onmessage = (event) => {
 }
 
 function fixChatHeight () {
-    const chat = document.getElementById("chat-div");
-    if (chat) {
-        const flexContainer = document.getElementById("chat-stack");
-        const flexItems = Array.from(flexContainer.children);
+    const playerStack = document.getElementById("player-stack");
+    const pokerStack = document.getElementById("poker-stack");
 
-        let height = flexContainer.getBoundingClientRect().height;
-        flexItems.forEach(item => {
-            if (item.id != "chat-div") {
-                height -= item.getBoundingClientRect().height;
-            }
-        })
+    if (playerStack && pokerStack) {
+        const chatStack = document.getElementById("chat-stack");
+        const infoDiv = document.getElementById("player-info-div");
+        const infoHeight = infoDiv.getBoundingClientRect().height;
+        const pokerHeight = pokerStack.getBoundingClientRect().height;
+        playerStack.style.height = `${pokerHeight}px`;
 
-        chat.style.maxHeight = `${height}px`;
+        
+        chatStack.style.height = `${pokerHeight - infoHeight - 16}px`;
         requestAnimationFrame(() => fixChatHeight());
     }
+
 
 }
 
