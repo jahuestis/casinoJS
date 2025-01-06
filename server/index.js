@@ -107,6 +107,7 @@ class PokerGame {
             this.turnID = this.turnOrder[(turnIndex += 1) % this.turnOrder.length];
         } while (!this.getPlayer(this.turnID) && this.players.length > 0);
         
+        this.sendTurns();
     }
 
     addToQueue(player) {
@@ -178,6 +179,22 @@ class PokerGame {
             }
         } else {
             console.log("player not in purgatory");
+        }
+    }
+
+    action(id, action, raise) {
+        if (id == this.turnID) {
+            console.log('valid player')
+            /*
+            if (action == 0) {
+                this.minRaise = Math.max(this.minRaise, raise);
+            }
+            this.lastAction = action;
+            this.broadcastToPlayers(jsonAction(action, raise));
+            */
+           this.nextTurn(); // test placeholder
+        } else {
+            console.log('invalid player action')
         }
     }
 
@@ -300,6 +317,10 @@ socket.on('connection', (ws) => {
                 poker.removePlayer(data.id);
             } else if (type === "startRound") {
                 poker.startRound();
+            } else if (type === "action") {
+                if (poker.roundState == 1) {
+                    poker.action(data.id, data.action, data.raise);
+                }
             } else {
                 throw new Error(`Unknown message type: ${type}`);
             }

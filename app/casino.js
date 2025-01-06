@@ -110,11 +110,16 @@ function createHeading(text, headingSize = 1, id = "game-heading", classes = [])
 function createActionButtons() {
     const buttons = [];
     buttons.push(createInput("0", "raise-input", ["action"]));
-    buttons.push(createButton("raise", "raise", ["action"]));
-    buttons.push(createButton("all-in", "all-in", ["action"]));
-    buttons.push(createButton("call", "call", ["action"]));
-    buttons.push(createButton("fold", "fold", ["action"]));
-    buttons.push(createButton("check", "check", ["action"]));
+    buttons.push(createButton("raise", "raise", ["action"])); // action 0
+    buttons.push(createButton("all-in", "all-in", ["action"])); // action 1
+    buttons.push(createButton("call", "call", ["action"])); // action 2
+    buttons.push(createButton("fold", "fold", ["action"])); // action 3
+    buttons.push(createButton("check", "check", ["action"])); // action 4
+    for (let i = 1; i < buttons.length; i++) {
+        buttons[i].addEventListener("click", () => {
+            if (myTurn) socket.send(jsonAction(i - 1, document.getElementById("raise-input").value));
+        })
+    }
     return buttons;
 }
 
@@ -352,6 +357,14 @@ function jsonAcceptPoker() {
 function jsonLeavePoker() {
     return jsonMessage("leavePoker", {
         id: playerId
+    });
+}
+
+function jsonAction(action, raise) {
+    return jsonMessage("action", {
+        id: playerId,
+        action: action,
+        raise: raise
     });
 }
 
