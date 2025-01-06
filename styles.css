@@ -40,8 +40,8 @@ button, input {
 }
 
 
-#bet-input {
-    width: 5ch;
+#raise-input {
+    width: 6ch;
 }
 
 .clickable:active, button:active {
@@ -57,12 +57,11 @@ a {
 
 
 #game {
-    
-    height: 95vh;
+    height: 90vh;
     padding: 2px;
-    margin: auto;
+    margin-top: 5vh;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
 
 }
@@ -77,9 +76,18 @@ a {
     flex-direction: row;
 }
 
-#loading-div {
-    text-align: center;
+#loading-div, #main-menu, #matchmaking-stack {
+    height: 90vh;
     display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    text-align: center;
+
+}
+
+#main-menu {
+    justify-content: flex-start;
 }
 
 #poker-wrapper {
@@ -87,12 +95,12 @@ a {
     flex-direction: row;
     min-height: 90vh;
     min-width: 85%;
+    margin: 0px;
 }
 
 #poker-stack, #player-stack {
     display: flex;
     flex-direction: column;
-    padding: .15rem;
 }
 
 #player-stack {
@@ -106,16 +114,23 @@ a {
 }
 
 #player-info-div {
-    flex: .6;
     border: .3rem solid lime;
     margin-bottom: 8px;
+    text-align: left;
+    padding: .35rem;
+    max-height: 100%;
+}
+
+#player-info, #chat-div {
+    margin: .5rem;
+    overflow: auto;
 }
 
 #chat-stack {
     display: flex;
     flex-direction: column;
     border: .3rem solid lime;
-    flex: .4;
+    flex: 1;
 }
 
 #chat-div {
@@ -153,6 +168,10 @@ a {
 
 #hole-div {
     margin-top: 3vh;
+}
+
+#spacer {
+    flex: 1;
 }
 
 

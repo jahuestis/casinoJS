@@ -95,6 +95,10 @@ function createDiv(elements, id = "flex-stack", classes = []) {
     return stack;
 }
 
+function createSpacer() {
+    return createDiv([], "spacer");
+}
+
 function createHeading(text, headingSize = 1, id = "game-heading", classes = []) {
     const heading = document.createElement("h" + headingSize);
     heading.id = id;
@@ -105,12 +109,15 @@ function createHeading(text, headingSize = 1, id = "game-heading", classes = [])
 
 function createActionButtons() {
     const buttons = [];
-    buttons.push(createInput("0", "bet-input", ["action"]));
-    buttons.push(createButton("raise", "game-button", ["action"]));
-    buttons.push(createButton("call", "game-button", ["action"]));
-    buttons.push(createButton("fold", "game-button", ["action"]));
+    buttons.push(createInput("0", "raise-input", ["action"]));
+    buttons.push(createButton("raise", "raise", ["action"]));
+    buttons.push(createButton("all-in", "all-in", ["action"]));
+    buttons.push(createButton("call", "call", ["action"]));
+    buttons.push(createButton("fold", "fold", ["action"]));
+    buttons.push(createButton("check", "check", ["action"]));
     return buttons;
 }
+
 class loadingHeading {
     constructor(text = "", headingSize = 1, id = "loading-heading", classes = []) {
         this.text = text;
@@ -172,7 +179,7 @@ function pokerQueueScreen() {
         console.log("left poker/queue")
     })
     const buttonDiv = createDiv([backButton], "queue-buttons");
-    const queueStack = createDiv([loading.element, buttonDiv]);
+    const queueStack = createDiv([loading.element, buttonDiv], "matchmaking-stack");
     gameArea.appendChild(queueStack);
 }
 
@@ -195,7 +202,7 @@ function pokerReadyScreen() {
         socket.send(jsonMessage("startRound", 0));
     })
     const buttonDiv = createDiv([backButton, startButton], "ready-buttons");
-    const readyStack = createDiv([ready, buttonDiv]);
+    const readyStack = createDiv([ready, buttonDiv], "matchmaking-stack");
     gameArea.appendChild(readyStack);
 }
 
@@ -223,9 +230,7 @@ chipsButton.addEventListener("click", () => updateChips(25));
 const pokerButton = createButton("play poker");
 pokerButton.addEventListener("click", () => requestPoker(mainMenu));
 const blackjackButton = createButton("blackjack");
-const testButton = createButton("test");
-const mainMenu = createDiv([title, pokerButton, chipsButton, chipsCounter]);
-testButton.addEventListener("click", () => dealTest(mainMenu));
+const mainMenu = createDiv([title, createSpacer(), pokerButton, chipsButton, createSpacer(), chipsCounter], "main-menu");
 
 // -- Client --
 const socket = new WebSocket('ws://localhost:3000');
@@ -280,6 +285,10 @@ socket.onmessage = (event) => {
         const chatInputDiv = createDiv([chatInput,chatSend], "chat-input-div");
         const chatStack = createDiv([chatDiv, chatInputDiv], "chat-stack");
         const playerInfoDiv = createDiv([], "player-info-div");
+        playerInfoDiv.appendChild(createHeading("players:", 3, "player-info"));
+        playerNames.forEach(name => {
+            playerInfoDiv.appendChild(createHeading(name, 3, "player-info"));
+        })
 
         const playerStack = createDiv([playerInfoDiv, chatStack], "player-stack");
 

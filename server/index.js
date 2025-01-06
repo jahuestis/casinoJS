@@ -20,6 +20,7 @@ class PokerGame {
         this.river = [];
         this.minRaise = 25;
         this.ante = 25;
+        this.lastAction = "";
         this.restoreDeck();
 
         this.updateLoop = setInterval(() => {
@@ -138,6 +139,9 @@ class PokerGame {
         this.broadcastNames();
         if (this.players.length <= 1 && this.roundState == 0) {
             this.broadcastToPlayers(jsonMessage("roundUnready", 0));
+        }
+        if (this.roundState == 1 && this.turnID == id) {
+            this.nextTurn();
         }
     }
 
