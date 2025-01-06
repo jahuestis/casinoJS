@@ -109,6 +109,7 @@ class PokerGame {
             this.turnID = this.turnOrder[(turnIndex += 1) % this.turnOrder.length];
         } while (!this.getPlayer(this.turnID) && this.players.length > 0);
         
+        console.log(`Next turn: ${this.turnID}`);
         this.sendTurns();
     }
 
@@ -245,8 +246,12 @@ class PokerGame {
         const sender = this.getPlayer(id);
         if (sender) {
             const trimmedMessage = String(message).trim();
-            const formattedMessage = `${sender.name}: ${trimmedMessage}`;
-            this.broadcastToPlayers(jsonChatMessage(formattedMessage));
+            if (trimmedMessage) {
+                const formattedMessage = `${sender.name}: ${trimmedMessage}`;
+                this.broadcastToPlayers(jsonChatMessage(formattedMessage));
+            } else {
+                console.log("empty message, ignored");
+            }
         } else {
             console.log("request to send chat has invalid player ID");
         }

@@ -63,7 +63,6 @@ a {
     display: flex;
     align-items: flex-start;
     justify-content: center;
-    background-color: blue;
 
 }
 
@@ -93,40 +92,20 @@ a {
     margin: auto
 }
 
-#poker-wrapper {
-    display: flex;
-    flex-direction: row;
-    min-height: 90vh;
-    min-width: 85%;
-    margin: 0px;
 
-}
-
-
-#poker-stack, #player-stack {
-    display: flex;
-    flex-direction: column;
-}
-
+/* player info & chat */
 
 #player-stack {
-    max-width: 50ch;
-    flex: 0 1 auto;
-    
-}
-
-#poker-stack {
-    flex: 1;
-    margin-left: 8px;
-    border: .3rem solid lime;
-    min-width: 50ch;
+    display: inline-block;
+    width: 30vw;
+    height: 600px;
 }
 
 #player-info-div {
+    text-align: left;
     border: .3rem solid lime;
     margin-bottom: 8px;
-    text-align: left;
-    padding: .35rem;
+    
 }
 
 #chat-stack {
@@ -134,14 +113,13 @@ a {
     flex-direction: column;
     justify-content: flex-end;
     border: .3rem solid lime;
-    flex: 1
 }
 
 #chat-div {
+    flex-grow: 0;
+    margin: 0px;
     text-align: left;
-    padding: .35rem;
     overflow: auto;
-    background-color: gray;
     
 }
 
@@ -153,15 +131,30 @@ a {
     font-size: 2rem;
     text-align: left;
     width: 100%;
+    min-width: 0;
 }
 
-#chat-send {
-    width: 6ch;
-}
 
 #player-info, #chat-message {
-    margin: .5rem;
+    margin: .85rem;
     overflow-wrap: break-word;
+}
+
+/* poker area */
+
+#poker-wrapper {
+    display: inline-block;
+    margin-left: 8px;
+    width: 55vw;
+
+}
+
+#poker-stack {
+    display: flex;
+    flex-direction: column;
+    min-height: 90vh;
+    width: 100%;
+    border: .3rem solid lime;
 }
 
 #card-div {
@@ -185,6 +178,7 @@ a {
 
 #spacer {
     flex: 1;
+    min-height: 0px;
 }
 
 
