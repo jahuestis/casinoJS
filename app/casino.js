@@ -1,4 +1,5 @@
 
+
 const gameArea = document.getElementById("game");
 
 let chips = 0;
@@ -77,11 +78,11 @@ function createButton(text, id = "game-button", classes = []) {
     return button;
 }
 
-function createInput(text = "", id = "raise-input", classes = []) {
+function createInput(value = "", id = "raise-input", classes = []) {
     const input = document.createElement("input");
     input.id = id;
     input.classList.add(...classes);
-    input.value = text;
+    input.value = value;
     return input;
 }
 
@@ -109,7 +110,7 @@ function createHeading(text, headingSize = 1, id = "game-heading", classes = [])
 
 function createActionButtons() {
     const buttons = [];
-    buttons.push(createInput("0", "raise-input", ["action"]));
+    buttons.push(createInput("25", "raise-input", ["action"]));
     buttons.push(createButton("raise", "raise", ["action"])); // action 0
     buttons.push(createButton("all-in", "all-in", ["action"])); // action 1
     buttons.push(createButton("call", "call", ["action"])); // action 2
@@ -283,16 +284,26 @@ socket.onmessage = (event) => {
         while (gameArea.firstChild) {
             gameArea.removeChild(gameArea.firstChild);
         }
-
         const chatDiv = createDiv([], "chat-div");
         const chatInput = createInput("", "chat-input");
         const chatSend = createButton("send", "chat-send");
+        function sendMessage() {
+            console.log(`sending chat message: ${chatInput.value}`);
+            socket.send(jsonChatMessage(chatInput.value));
+            chatInput.value = "";
+        }
+        chatSend.addEventListener("click", () => sendMessage());
+        chatInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        })
         const chatInputDiv = createDiv([chatInput,chatSend], "chat-input-div");
-        const chatStack = createDiv([chatDiv, chatInputDiv], "chat-stack");
+        const chatStack = createDiv([chatDiv, createSpacer(), chatInputDiv], "chat-stack");
         const playerInfoDiv = createDiv([], "player-info-div");
-        playerInfoDiv.appendChild(createHeading("players:", 3, "player-info"));
+        playerInfoDiv.appendChild(createHeading("players:", 2, "player-info"));
         playerNames.forEach(name => {
-            playerInfoDiv.appendChild(createHeading(name, 3, "player-info"));
+            playerInfoDiv.appendChild(createHeading(name, 2, "player-info"));
         })
 
         const playerStack = createDiv([playerInfoDiv, chatStack], "player-stack");
@@ -306,6 +317,9 @@ socket.onmessage = (event) => {
         const pokerWrapper = createDiv([playerStack, pokerStack], "poker-wrapper");
         gameArea.appendChild(pokerWrapper);
         pokerQueued = false;
+
+        // fix chat height
+        //requestAnimationFrame(() => fixChatHeight());
     } else if (messageType === "deal") {
         const newHole = data.hole;
         console.log(`received hole: ${newHole}`);
@@ -329,11 +343,34 @@ socket.onmessage = (event) => {
         if (myTurn) console.log("turn over");
         myTurn = false;
         document.getElementById("turn-indicator").textContent = "";
+    } else if (messageType === "chatMessage") {
+        const chat = document.getElementById("chat-div");
+        const messageElement = createHeading(data.message, 2, "chat-message");
+        chat.appendChild(messageElement);
+        chat.scrollTop = chat.scrollHeight;
     } else {
         console.log(`unknown message type: ${messageType}`);
     }
 }
 
+function fixChatHeight () {
+    const chat = document.getElementById("chat-div");
+    if (chat) {
+        const flexContainer = document.getElementById("chat-stack");
+        const flexItems = Array.from(flexContainer.children);
+
+        let height = flexContainer.getBoundingClientRect().height;
+        flexItems.forEach(item => {
+            if (item.id != "chat-div") {
+                height -= item.getBoundingClientRect().height;
+            }
+        })
+
+        chat.style.maxHeight = `${height}px`;
+        requestAnimationFrame(() => fixChatHeight());
+    }
+
+}
 
 function jsonConnect(name, id) {
     return jsonMessage("clientConnected", {
@@ -365,6 +402,13 @@ function jsonAction(action, raise) {
         id: playerId,
         action: action,
         raise: raise
+    });
+}
+
+function jsonChatMessage(message) {
+    return jsonMessage("chatMessage", {
+        id: playerId,
+        message: message
     });
 }
 

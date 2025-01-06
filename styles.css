@@ -37,6 +37,7 @@ button, input {
     padding: .25em;
     margin: .15em;   
     min-width: 6ch;
+    outline: none;
 }
 
 
@@ -57,12 +58,12 @@ a {
 
 
 #game {
-    height: 90vh;
     padding: 2px;
     margin-top: 5vh;
     display: flex;
     align-items: flex-start;
     justify-content: center;
+    background-color: blue;
 
 }
 
@@ -88,6 +89,8 @@ a {
 
 #main-menu {
     justify-content: flex-start;
+    width: 22ch;
+    margin: auto
 }
 
 #poker-wrapper {
@@ -96,21 +99,27 @@ a {
     min-height: 90vh;
     min-width: 85%;
     margin: 0px;
+
 }
+
 
 #poker-stack, #player-stack {
     display: flex;
     flex-direction: column;
 }
 
+
 #player-stack {
-    flex: .33;
+    max-width: 50ch;
+    flex: 0 1 auto;
+    
 }
 
 #poker-stack {
-    flex: .66;
+    flex: 1;
     margin-left: 8px;
     border: .3rem solid lime;
+    min-width: 50ch;
 }
 
 #player-info-div {
@@ -118,23 +127,22 @@ a {
     margin-bottom: 8px;
     text-align: left;
     padding: .35rem;
-    max-height: 100%;
-}
-
-#player-info, #chat-div {
-    margin: .5rem;
-    overflow: auto;
 }
 
 #chat-stack {
     display: flex;
     flex-direction: column;
+    justify-content: flex-end;
     border: .3rem solid lime;
-    flex: 1;
+    flex: 1
 }
 
 #chat-div {
-    flex: 1;
+    text-align: left;
+    padding: .35rem;
+    overflow: auto;
+    background-color: gray;
+    
 }
 
 #chat-input-div {
@@ -149,6 +157,11 @@ a {
 
 #chat-send {
     width: 6ch;
+}
+
+#player-info, #chat-message {
+    margin: .5rem;
+    overflow-wrap: break-word;
 }
 
 #card-div {

@@ -66,12 +66,14 @@ class PokerGame {
 
     startRound() {
         if (this.roundState == 0 && this.players.length > 1) {
+            shuffleArray(this.players);
             this.turnOrder = this.players.map(player => player.id);
             this.turnID = this.turnOrder[0];
             this.round += 1;
             this.roundState = 1;
             this.minRaise = 25;
             console.log(`Starting round ${this.round} with ${this.players.length} players`);
+            this.broadcastNames();
             this.broadcastToPlayers(jsonMessage("roundStart", 0));
             this.restoreDeck();
             this.deal();
@@ -239,6 +241,17 @@ class PokerGame {
         //console.log(this.roundState);
     }
 
+    chatMessage(id, message) {
+        const sender = this.getPlayer(id);
+        if (sender) {
+            const trimmedMessage = String(message).trim();
+            const formattedMessage = `${sender.name}: ${trimmedMessage}`;
+            this.broadcastToPlayers(jsonChatMessage(formattedMessage));
+        } else {
+            console.log("request to send chat has invalid player ID");
+        }
+    }
+
     broadcastNames() {
         // send list display names to all current players
         const playerNames = []
@@ -315,6 +328,9 @@ socket.on('connection', (ws) => {
             } else if (type === "leavePoker") {
                 console.log(`${clients.get(data.id).name} left poker/queue`);
                 poker.removePlayer(data.id);
+            } 
+            else if (type === "chatMessage") {
+                poker.chatMessage(data.id, data.message);
             } else if (type === "startRound") {
                 poker.startRound();
             } else if (type === "action") {
@@ -378,4 +394,21 @@ function jsonYourTurn() {
 
 function jsonNotYourTurn() {
     return jsonMessage("notYourTurn", {});
+}
+
+function jsonChatMessage(message) {
+    return jsonMessage("chatMessage", {
+        message: message
+    });
+}
+
+
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        // Generate a random index between 0 and i (inclusive)
+        const randomIndex = Math.floor(Math.random() * (i + 1));
+        // Swap the elements at i and randomIndex
+        [array[i], array[randomIndex]] = [array[randomIndex], array[i]];
+    }
+    return array;
 }
