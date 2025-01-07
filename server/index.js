@@ -72,8 +72,8 @@ class PokerGame {
             this.lastAction = "startRound";
             console.log(`Starting round ${this.round} with ${this.players.length} players`);
             this.resetBets();
-            this.blind(this.players[0], this.minRaise);
-            this.blind(this.players[1], this.minRaise);
+            this.blind(this.players[0], this.minRaise, "small");
+            this.blind(this.players[1], this.minRaise, "big");
             this.broadcastNames();
             this.broadcastToPlayers(jsonMessage("roundStart", 0));
             this.restoreDeck();
@@ -235,12 +235,16 @@ class PokerGame {
         }
     }
 
-    blind(player, amount) {
+    blind(player, amount, blindSize) {
         if (player.chips + player.bet >= this.bet + amount) {
-            console.log(`${player.name} met blind (${this.bet + amount})`);
-            return this.raise(player, amount);
+            this.minRaise = amount;
+            this.bet = this.bet + amount;
+            player.setBet(this.bet);
+            this.setLastAction(`${blindSize} blind`, player);
+            console.log(`${player.name} (${player.chips}) posted ${blindSize} blind (${this.bet})`);
+            return true;
         } else {
-            console.log(`${player.name} could not meet blind (${this.bet + amount})`);
+            console.log(`${player.name} (${player.chips}) could not post ${blindSize} blind (${this.bet})`);
             return false;
         }
     }
@@ -411,9 +415,15 @@ class PokerPlayer {
         this.sendChips();
     }
 
-    getFreeChips(amount = 25) {
+    getFreeChips(amount = 25, maxFreeChips = 1500) {
         if (!poker.getPlayer(this.id)) {
-            this.addChips(amount);
+            if (this.chips < maxFreeChips) {
+                if (this.chips + amount > maxFreeChips) {
+                    this.setChips(maxFreeChips);
+                } else {
+                    this.addChips(amount);
+                }
+            }
         }
     }
 
