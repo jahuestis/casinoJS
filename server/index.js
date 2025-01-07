@@ -19,8 +19,9 @@ class PokerGame {
         this.deck = [];
         this.river = [];
         this.minRaise = 25;
-        this.ante = 25;
+        this.bet = 0;
         this.lastAction = "";
+        this.lastRaiseID;
         this.restoreDeck();
 
         this.updateLoop = setInterval(() => {
@@ -66,13 +67,17 @@ class PokerGame {
 
     startRound() {
         if (this.roundState == 0 && this.players.length > 1) {
-            shuffleArray(this.players);
+            //shuffleArray(this.players);
             this.turnOrder = this.players.map(player => player.id);
-            this.turnID = this.turnOrder[0];
+            this.turnID = this.turnOrder[3 % this.players.length];
             this.round += 1;
             this.roundState = 1;
             this.minRaise = 25;
+            this.lastAction = "startRound";
             console.log(`Starting round ${this.round} with ${this.players.length} players`);
+            this.resetBets();
+            this.blind(this.players[0], this.minRaise);
+            this.blind(this.players[1], this.minRaise);
             this.broadcastNames();
             this.broadcastToPlayers(jsonMessage("roundStart", 0));
             this.restoreDeck();
@@ -80,6 +85,10 @@ class PokerGame {
             this.sendTurns();
         }
         
+    }
+
+    shiftSeats() {
+        this.players.push(this.players.shift());
     }
 
     sendTurns() {
@@ -109,9 +118,23 @@ class PokerGame {
             this.turnID = this.turnOrder[(turnIndex += 1) % this.turnOrder.length];
         } while (!this.getPlayer(this.turnID) && this.players.length > 0);
         
-        console.log(`Next turn: ${this.turnID}`);
+        console.log(`Next turn: ${this.getPlayer(this.turnID).name}`);
         this.sendTurns();
     }
+
+    resetBets() {
+        this.bet = 0;
+        this.players.forEach(player => {
+            player.bet = 0;
+            player.setLastAction("reset");
+        })
+    }
+
+    setLastAction(action, player) {
+        this.lastAction = action;
+        player.setLastAction(action);
+    }
+
 
     addToQueue(player) {
         this.playerQueue.push(player);
@@ -137,6 +160,11 @@ class PokerGame {
     }
 
     removePlayer(id) {
+        const player = this.getPlayer(id);
+        if (player) {
+            this.fold(player);
+            player.setLastAction("abandoned");
+        }
         this.playerQueue = this.playerQueue.filter(player => player.id !== id);
         this.purgatory = this.purgatory.filter(player => player.id !== id);
         this.players = this.players.filter(player => player.id !== id);
@@ -188,16 +216,91 @@ class PokerGame {
     action(id, action, raise) {
         if (id == this.turnID) {
             console.log('valid player')
-            /*
-            if (action == 0) {
-                this.minRaise = Math.max(this.minRaise, raise);
+            let actionSuccessful = false;
+            switch (action) {
+                case 0:
+                    actionSuccessful = this.raise(this.getPlayer(id), parseInt(raise));
+                    break;
+                case 1:
+                    actionSuccessful = this.allIn(this.getPlayer(id));
+                    break;
+                case 2:
+                    actionSuccessful = this.call(this.getPlayer(id));
+                    break;
+                case 3:
+                    actionSuccessful = this.fold(this.getPlayer(id));
+                    break;
+                case 4:
+                    actionSuccessful = this.check(this.getPlayer(id));
+                    break;
+                default:
+                    console.log('invalid action');
             }
-            this.lastAction = action;
-            this.broadcastToPlayers(jsonAction(action, raise));
-            */
-           this.nextTurn(); // test placeholder
+
+            if (actionSuccessful) {
+                this.broadcastDetails();
+                this.nextTurn();
+            }
+
         } else {
             console.log('invalid player action')
+        }
+    }
+
+    blind(player, amount) {
+        if (player.chips + player.bet >= this.bet + amount) {
+            console.log(`${player.name} met blind (${this.bet + amount})`);
+            return this.raise(player, amount);
+        } else {
+            console.log(`${player.name} could not meet blind (${this.bet + amount})`);
+            return false;
+        }
+    }
+
+    raise(player, amount) {
+        if (player.chips + player.bet >= this.bet + amount) {
+            this.bet = this.bet + amount;
+            player.setBet(this.bet);
+            this.setLastAction("raise", player);
+            console.log(`${player.name} (${player.chips}) raised by ${amount} (${this.bet})`)
+            return true;
+        } else {
+            console.log(`${player.name} (${player.chips}) could not raise by ${amount} (${this.bet})`)
+            return false;
+        }
+    }
+
+    allIn(player) {
+        console.log("All-in not implemented");
+        return true;
+    }
+
+    call(player) {
+        if (player.chips + player.bet>= this.bet) {
+            player.setBet(this.bet);
+            this.setLastAction("call", player);
+            console.log(`${player.name} (${player.chips}) called (${this.bet})`)
+            return true;
+        } else {
+            console.log(`${player.name} (${player.chips}) could not call (${this.bet})`)
+            return false;
+        }
+    }
+
+    fold(player) {
+        console.log(`${player.name} folded`)
+        this.setLastAction("fold", player);
+        return true;
+    }
+
+    check(player) {
+        if (this.lastAction == "check") {
+            console.log(`${player.name} checked`)
+            this.setLastAction("check", player);
+            return true;
+        } else {
+            console.log(`${player.name} could not check`)
+            return false;
         }
     }
 
@@ -266,6 +369,10 @@ class PokerGame {
         this.broadcastToPlayers(jsonNamesList(playerNames));
     }
 
+    broadcastDetails() {
+
+    }
+
     broadcastToPlayers(message) {
         this.players.forEach(player => {
             try {
@@ -279,12 +386,15 @@ class PokerGame {
 }
 
 class PokerPlayer {
-    constructor(id, ws, name) {
+    constructor(id, ws, name, chips = 500) {
         this.id = id;
         this.ws = ws;
         this.name = name;
         this.hole = [];
         this.timeInPurgatory = 0;
+        this.chips = chips;
+        this.bet = 0;
+        this.lastAction = "";
     }
 
     incrementTimeInPurgatory() {
@@ -297,6 +407,15 @@ class PokerPlayer {
 
     updateWS(ws) {
         this.ws = ws;
+    }
+
+    setLastAction(action) {
+        this.lastAction = action;
+    }
+
+    setBet(newBet) {
+        this.chips -= (newBet - this.bet);
+        this.bet = newBet;
     }
 
 }

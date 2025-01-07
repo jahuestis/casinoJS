@@ -284,7 +284,7 @@ socket.onmessage = (event) => {
         while (gameArea.firstChild) {
             gameArea.removeChild(gameArea.firstChild);
         }
-        const chatDiv = createDiv([createHeading("beginning of chat", 2, "chat-message")], "chat-div");
+        const chatDiv = createDiv([createHeading("chat:", 2, "chat-message")], "chat-div");
         const chatInput = createInput("", "chat-input");
         const chatSend = createButton("send", "chat-send");
         function sendMessage() {
@@ -292,8 +292,8 @@ socket.onmessage = (event) => {
             if (trimmedMessage) {
                 console.log(`sending chat message: ${chatInput.value}`);
                 socket.send(jsonChatMessage(chatInput.value));
-                chatInput.value = "";
             }
+            chatInput.value = "";
         }
         chatSend.addEventListener("click", () => sendMessage());
         chatInput.addEventListener("keydown", (event) => {
