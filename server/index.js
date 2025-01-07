@@ -112,13 +112,16 @@ class PokerGame {
                 turnIndex = i;
             }
         }
-        let player = this.getPlayer(this.turnID);
-        do {
-            this.turnID = this.turnOrder[(turnIndex += 1) % this.turnOrder.length];
-            player = this.getPlayer(this.turnID);
-        } while (!player && this.players.length > 0);
         
-        if (player && (player.lastAction == "fold" || player.lastAction == "abandoned") && (this.folded < this.turnOrder.length)) {
+        this.turnID = this.turnOrder[(turnIndex += 1) % this.turnOrder.length];
+        const player = this.getPlayer(this.turnID);
+
+        if (this.turnID == this.lastRaiseID) {
+            console.log(`round over`);
+            return;
+        }
+
+        if ((!player && this.players.length > 0) || (player && (player.lastAction == "fold" || player.lastAction == "abandoned") && (this.folded < this.turnOrder.length))) {
             this.nextTurn();
         } else {
             console.log(`Next turn`);
