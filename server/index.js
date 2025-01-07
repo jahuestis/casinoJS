@@ -27,7 +27,7 @@ class PokerGame {
 
         this.updateLoop = setInterval(() => {
             this.update();
-        }, 1000);
+        }, 2500);
 
 
     }
@@ -328,7 +328,7 @@ class PokerGame {
             for (let i = 0; i < this.purgatory.length; i++) {
                 const player = this.purgatory[i];
                 player.incrementTimeInPurgatory();
-                if (player.timeInPurgatory > 6) {
+                if (player.timeInPurgatory > 3) {
                     this.removePlayer(player.id);
                     console.log(`${player.name} did not accept invitation, purged`);
                 }
