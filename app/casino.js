@@ -4,14 +4,13 @@ const gameArea = document.getElementById("game");
 
 let chips = 0;
 let displayName = "anon";
-let playerId;
+let playerID;
 let myTurn = false;
 
 let playerNames = [];
 
-function updateChips(count) {
-    chips += count;
-    chipsCounter.textContent = "chips: " + chips;
+function updateChips() {
+    socket.send(jsonFreeChips());
 }
 
 // Input info
@@ -246,10 +245,17 @@ socket.onmessage = (event) => {
     const messageType = message.type;
     const data = message.data;
     if (messageType === "requestClient") {
-        if (!playerId) {
-            playerId = data.id;
+        if (!playerID) {
+            playerID = data.id;
         }
-        socket.send(jsonConnect(displayName, playerId));
+        socket.send(jsonConnect(displayName, playerID));
+    } else if (messageType === "initializeClient") {
+        displayName = data.name;
+        chips = data.chips;
+        chipsCounter.textContent = "chips: " + chips;
+    } else if (messageType === "chips") {
+        chips = data.chips;
+        chipsCounter.textContent = "chips: " + chips;
     } else if (messageType === "invitePoker") {
         if (pokerQueued) {
             console.log("poker accepted")
@@ -383,27 +389,32 @@ function jsonConnect(name, id) {
     });
 }
 
+function jsonFreeChips() {
+    return jsonMessage("freeChips", {
+        id: playerID
+    });
+}
 function jsonQueuePoker() {
     return jsonMessage("queuePoker", {
-        id: playerId
+        id: playerID
     });
 }
 
 function jsonAcceptPoker() {
     return jsonMessage("acceptPoker", {
-        id: playerId
+        id: playerID
     });
 }
 
 function jsonLeavePoker() {
     return jsonMessage("leavePoker", {
-        id: playerId
+        id: playerID
     });
 }
 
 function jsonAction(action, raise) {
     return jsonMessage("action", {
-        id: playerId,
+        id: playerID,
         action: action,
         raise: raise
     });
@@ -411,7 +422,7 @@ function jsonAction(action, raise) {
 
 function jsonChatMessage(message) {
     return jsonMessage("chatMessage", {
-        id: playerId,
+        id: playerID,
         message: message
     });
 }
