@@ -118,7 +118,7 @@ class PokerGame {
             this.turnID = this.turnOrder[(turnIndex += 1) % this.turnOrder.length];
         } while (!this.getPlayer(this.turnID) && this.players.length > 0);
         
-        console.log(`Next turn: ${this.getPlayer(this.turnID).name}`);
+        console.log(`Next turn`);
         this.sendTurns();
     }
 
@@ -272,7 +272,7 @@ class PokerGame {
 
     allIn(player) {
         console.log("All-in not implemented");
-        return true;
+        return false;
     }
 
     call(player) {
