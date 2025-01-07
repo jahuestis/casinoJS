@@ -69,7 +69,7 @@ class PokerGame {
         if (this.roundState == 0 && this.players.length > 1) {
             //shuffleArray(this.players);
             this.turnOrder = this.players.map(player => player.id);
-            this.turnID = this.turnOrder[3 % this.players.length];
+            this.turnID = this.turnOrder[2 % this.players.length];
             this.round += 1;
             this.roundState = 1;
             this.minRaise = 25;
