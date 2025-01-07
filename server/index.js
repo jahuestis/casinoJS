@@ -258,10 +258,12 @@ class PokerGame {
     }
 
     raise(player, amount) {
-        if (player.chips + player.bet >= this.bet + amount) {
+        if (player.chips + player.bet >= this.bet + amount && amount >= this.minRaise) {
+            this.minRaise = amount;
             this.bet = this.bet + amount;
             player.setBet(this.bet);
             this.setLastAction("raise", player);
+            this.lastRaiseID = player.id;
             console.log(`${player.name} (${player.chips}) raised by ${amount} (${this.bet})`)
             return true;
         } else {
