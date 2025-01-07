@@ -369,7 +369,7 @@ function fixChatHeight () {
         playerStack.style.height = `${pokerHeight}px`;
 
         
-        chatStack.style.height = `${pokerHeight - infoHeight - 16}px`;
+        chatStack.style.height = `${pokerHeight - infoHeight - 8}px`;
         requestAnimationFrame(() => fixChatHeight());
     }
 
