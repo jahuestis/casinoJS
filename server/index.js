@@ -20,6 +20,7 @@ class PokerGame {
         this.river = [];
         this.minRaise = 25;
         this.bet = 0;
+        this.folded = 0;
         this.lastAction = "";
         this.lastRaiseID;
         this.restoreDeck();
@@ -57,11 +58,11 @@ class PokerGame {
                 this.river.push(this.deck.splice(randomIndex, 1)[0]);
             }
         }
-        console.log(`River: ${this.river}`);
+        //console.log(`River: ${this.river}`);
 
     }
 
-    startRound() {
+    startHand() {
         if (this.roundState == 0 && this.players.length > 1) {
             //shuffleArray(this.players);
             this.turnOrder = this.players.map(player => player.id);
@@ -69,13 +70,14 @@ class PokerGame {
             this.round += 1;
             this.roundState = 1;
             this.minRaise = 25;
-            this.lastAction = "startRound";
-            console.log(`Starting round ${this.round} with ${this.players.length} players`);
+            this.folded = 0;
+            this.lastAction = "startHand";
+            console.log(`Starting hand with ${this.players.length} players`);
             this.resetBets();
             this.blind(this.players[0], this.minRaise, "small");
             this.blind(this.players[1], this.minRaise, "big");
             this.broadcastNames();
-            this.broadcastToPlayers(jsonMessage("roundStart", 0));
+            this.broadcastToPlayers(jsonMessage("handStart", 0));
             this.restoreDeck();
             this.deal();
             this.sendTurns();
@@ -110,12 +112,18 @@ class PokerGame {
                 turnIndex = i;
             }
         }
+        let player = this.getPlayer(this.turnID);
         do {
             this.turnID = this.turnOrder[(turnIndex += 1) % this.turnOrder.length];
-        } while (!this.getPlayer(this.turnID) && this.players.length > 0);
+            player = this.getPlayer(this.turnID);
+        } while (!player && this.players.length > 0);
         
-        console.log(`Next turn`);
-        this.sendTurns();
+        if (player && (player.lastAction == "fold" || player.lastAction == "abandoned") && (this.folded < this.turnOrder.length)) {
+            this.nextTurn();
+        } else {
+            console.log(`Next turn`);
+            this.sendTurns();
+        }
     }
 
     resetBets() {
@@ -227,6 +235,9 @@ class PokerGame {
 
             if (actionSuccessful) {
                 this.broadcastDetails();
+                if (this.folded >= this.turnOrder.length - 1) {
+                    console.log('uncontested hand');
+                }
                 this.nextTurn();
             }
 
@@ -241,6 +252,7 @@ class PokerGame {
             this.bet = this.bet + amount;
             player.setBet(this.bet);
             this.setLastAction(`${blindSize} blind`, player);
+            this.lastRaiseID = player.id;
             console.log(`${player.name} (${player.chips}) posted ${blindSize} blind (${this.bet})`);
             return true;
         } else {
@@ -282,8 +294,9 @@ class PokerGame {
     }
 
     fold(player) {
-        console.log(`${player.name} folded`)
+        this.folded ++;
         this.setLastAction("fold", player);
+        console.log(`${player.name} folded`)
         return true;
     }
 
@@ -494,8 +507,8 @@ socket.on('connection', (ws) => {
                 if (clients.has(data.id)) {
                     poker.chatMessage(data.id, data.message);
                 }
-            } else if (type === "startRound") {
-                poker.startRound();
+            } else if (type === "startHand") {
+                poker.startHand();
             } else if (type === "action") {
                 if (poker.roundState == 1 && clients.has(data.id)) {
                     poker.action(data.id, data.action, data.raise);

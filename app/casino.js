@@ -204,7 +204,7 @@ function pokerReadyScreen() {
     const startButton = createButton("start", "start-button");
     startButton.addEventListener("click", () => {
         console.log("requesting round start");
-        socket.send(jsonMessage("startRound", 0));
+        socket.send(jsonMessage("startHand", 0));
     })
     const buttonDiv = createDiv([backButton, startButton], "ready-buttons");
     const readyStack = createDiv([ready, buttonDiv], "matchmaking-stack");
@@ -285,8 +285,8 @@ socket.onmessage = (event) => {
         if (pokerQueued) {
             pokerQueueScreen(false);
         }
-    } else if (messageType === "roundStart") {
-        console.log("round started!");
+    } else if (messageType === "handStart") {
+        console.log("hand started!");
         while (gameArea.firstChild) {
             gameArea.removeChild(gameArea.firstChild);
         }
