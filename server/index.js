@@ -373,17 +373,28 @@ class PokerGame {
             this.sendTurns();
         }
 
-        if (this.players.length == 0) {
+        if (this.folded >= this.turnOrder.length) {
             if (this.gameState != 0) {
                 console.log("All players disconnected, restarting game");
+                this.gameState = 0;
+                this.kickPlayers();
             }
-            this.gameState = 0;
         }
 
         //console.log(`queue: ${this.playerQueue}`);
         //console.log(`purgatory: ${this.purgatory}`);
         //console.log(`players: ${this.players}`);
         //console.log(this.gameState);
+    }
+
+    kickPlayers() {
+        this.players.forEach(player => {
+            //console.log(player.kickMe);
+            if (player.kickMe) {
+                console.log(`kicking ${player.name}`);
+                this.removePlayer(player.id);
+            }
+        });
     }
 
     chatMessage(id, message) {
