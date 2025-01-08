@@ -122,7 +122,7 @@ class PokerGame {
             return;
         }
 
-        if ((!player && this.players.length > 0) || (player && (player.lastAction == "fold" || player.lastAction == "abandoned") && (this.folded < this.turnOrder.length))) {
+        if ((!player && this.players.length > 0) || (player && (player.folded) && (this.folded < this.turnOrder.length))) {
             this.nextTurn(checkRoundOver);
         } else {
             console.log(`Next turn`);
@@ -157,7 +157,7 @@ class PokerGame {
     }
 
     reveal(range) {
-        console.log(`Revealing ${range} community cards`);
+        console.log(`revealed ${range} community cards`);
         this.broadcastToPlayers(jsonCommunity(this.community.slice(0, range)));
     }
 
@@ -165,7 +165,6 @@ class PokerGame {
         this.bet = 0;
         this.players.forEach(player => {
             player.bet = 0;
-            player.setLastAction("reset");
         })
     }
 
@@ -202,7 +201,7 @@ class PokerGame {
         const player = this.getPlayer(id);
         if (player) {
             this.fold(player);
-            player.setLastAction("abandoned");
+            //player.setLastAction("abandoned");
         }
         this.playerQueue = this.playerQueue.filter(player => player.id !== id);
         this.purgatory = this.purgatory.filter(player => player.id !== id);
@@ -331,6 +330,7 @@ class PokerGame {
     fold(player) {
         this.folded ++;
         this.setLastAction("fold", player);
+        player.fold();
         console.log(`${player.name} folded`)
         return true;
     }
@@ -407,8 +407,26 @@ class PokerGame {
         this.broadcastToPlayers(jsonNamesList(playerNames));
     }
 
-    broadcastDetails() {
+    broadcastDetails(player = null) {
+        let details = []
+        if (!player) {
+            this.players.forEach(player => {
+                details.push(this.formatDetails(player));
+            })
+        } else {
+            details.push(this.formatDetails(player))
+        }
 
+        this.broadcastToPlayers(jsonDetails(details));
+    }
+
+    formatDetails(player) {
+        return {
+            name: player.name, 
+            chips: player.chips, 
+            lastAction: player.lastAction, 
+            folded: player.folded
+        }
     }
 
     broadcastToPlayers(message) {
@@ -429,6 +447,7 @@ class PokerPlayer {
         this.chips = chips;
         this.bet = 0;
         this.lastAction = "";
+        this.folded = false;
     }
 
     incrementTimeInPurgatory() {
@@ -489,6 +508,14 @@ class PokerPlayer {
         } catch (error) {
             
         }
+    }
+
+    fold() {
+        this.folded = true;
+    }
+
+    unfold() {
+        this.folded = false;
     }
 
 }
@@ -615,7 +642,12 @@ function jsonDeal(hole) {
     return jsonMessage("deal", {
         hole: hole
     });
+}
 
+function jsonDetails(details) {
+    return jsonMessage("details", {
+        details: details
+    });
 }
 
 function jsonYourTurn() {
