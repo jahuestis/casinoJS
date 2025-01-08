@@ -10,14 +10,15 @@ class PokerGame {
     constructor() {
         this.maxPlayers = 8;
         this.round = 0;
-        this.roundState = 0; // 0 = waiting for round start, 1 = round active
+        this.gameState = 0; // 0 = waiting for round start, 1 = round active
         this.playerQueue = [];
         this.purgatory = [];
         this.players = [];
         this.turnOrder = [];
         this.turnID;
         this.deck = [];
-        this.river = [];
+        this.community = [];
+        this.revealed = 0;
         this.minRaise = 25;
         this.bet = 0;
         this.folded = 0;
@@ -51,38 +52,14 @@ class PokerGame {
             player.sendWS(jsonDeal(player.hole));
         })
 
-        this.river = [];
+        this.community = [];
         for (let i = 0; i < 5; i++) {
             if (this.deck.length > 0) {
                 const randomIndex = Math.floor(Math.random() * this.deck.length);
-                this.river.push(this.deck.splice(randomIndex, 1)[0]);
+                this.community.push(this.deck.splice(randomIndex, 1)[0]);
             }
         }
-        //console.log(`River: ${this.river}`);
 
-    }
-
-    startHand() {
-        if (this.roundState == 0 && this.players.length > 1) {
-            //shuffleArray(this.players);
-            this.turnOrder = this.players.map(player => player.id);
-            this.turnID = this.turnOrder[2 % this.players.length];
-            this.round += 1;
-            this.roundState = 1;
-            this.minRaise = 25;
-            this.folded = 0;
-            this.lastAction = "startHand";
-            console.log(`Starting hand with ${this.players.length} players`);
-            this.resetBets();
-            this.blind(this.players[0], this.minRaise, "small");
-            this.blind(this.players[1], this.minRaise, "big");
-            this.broadcastNames();
-            this.broadcastToPlayers(jsonMessage("handStart", 0));
-            this.restoreDeck();
-            this.deal();
-            this.sendTurns();
-        }
-        
     }
 
     shiftSeats() {
@@ -104,7 +81,30 @@ class PokerGame {
             
     }
 
-    nextTurn() {
+    startHand() {
+        if (this.gameState == 0 && this.players.length > 1) {
+            //shuffleArray(this.players);
+            this.turnOrder = this.players.map(player => player.id);
+            this.turnID = this.turnOrder[2 % this.players.length];
+            this.round = 0;
+            this.gameState = 1;
+            this.minRaise = 25;
+            this.folded = 0;
+            this.lastAction = "startHand";
+            console.log(`Starting hand with ${this.players.length} players`);
+            this.resetBets();
+            this.blind(this.players[0], this.minRaise, "small");
+            this.blind(this.players[1], this.minRaise, "big");
+            this.broadcastNames();
+            this.broadcastToPlayers(jsonMessage("handStart", 0));
+            this.restoreDeck();
+            this.deal();
+            this.sendTurns();
+        }
+        
+    }
+
+    nextTurn(checkRoundOver = true) {
         let turnIndex = 0;
 
         for (let i = 0; i < this.turnOrder.length; i++) {
@@ -116,17 +116,46 @@ class PokerGame {
         this.turnID = this.turnOrder[(turnIndex += 1) % this.turnOrder.length];
         const player = this.getPlayer(this.turnID);
 
-        if (this.turnID == this.lastRaiseID) {
-            console.log(`round over`);
+        if (this.turnID == this.lastRaiseID && checkRoundOver) {
+            console.log("Next round");
+            this.nextRound();
             return;
         }
 
         if ((!player && this.players.length > 0) || (player && (player.lastAction == "fold" || player.lastAction == "abandoned") && (this.folded < this.turnOrder.length))) {
-            this.nextTurn();
+            this.nextTurn(checkRoundOver);
         } else {
             console.log(`Next turn`);
             this.sendTurns();
         }
+    }
+
+    nextRound() {
+        this.round ++;
+        switch (this.round) {
+            case 1:
+                this.reveal(3);
+                break;
+            case 2:
+                this.reveal(4);
+                break;
+            case 3:
+                this.reveal(5);
+                break;
+            default:
+                console.error("Invalid turn value:", this.turn);
+        }
+        this.lastAction = "check";
+        this.turnID = this.turnOrder[this.turnOrder.length - 1]
+        this.nextTurn(false);
+        this.lastRaiseID = this.turnID;
+        
+
+    }
+
+    reveal(range) {
+        console.log(`Revealing ${range} community cards`);
+        this.broadcastToPlayers(jsonCommunity(this.community.slice(0, range)));
     }
 
     resetBets() {
@@ -176,10 +205,10 @@ class PokerGame {
         this.purgatory = this.purgatory.filter(player => player.id !== id);
         this.players = this.players.filter(player => player.id !== id);
         this.broadcastNames();
-        if (this.players.length <= 1 && this.roundState == 0) {
+        if (this.players.length <= 1 && this.gameState == 0) {
             this.broadcastToPlayers(jsonMessage("roundUnready", 0));
         }
-        if (this.roundState == 1 && this.turnID == id) {
+        if (this.gameState == 1 && this.turnID == id) {
             this.nextTurn();
         }
     }
@@ -188,7 +217,7 @@ class PokerGame {
         const player = this.getFromPurgatory(id);
 
         if (player) {
-            if (this.roundState == 0) {
+            if (this.gameState == 0) {
                 if (this.players.length < this.maxPlayers) {
                     if (player) {
                         this.players.push(player);
@@ -315,7 +344,7 @@ class PokerGame {
     }
 
     update() {
-        if (this.roundState == 0) {
+        if (this.gameState == 0) {
             // Move players to purgatory for queue confirmation if space available in game
             while (this.players.length < this.maxPlayers && this.playerQueue.length > 0) {
                 const player = this.playerQueue.shift();
@@ -334,21 +363,21 @@ class PokerGame {
                 }
             }
             
-        } else if (this.roundState == 1) {
+        } else if (this.gameState == 1) {
             this.sendTurns();
         }
 
         if (this.players.length == 0) {
-            if (this.roundState != 0) {
+            if (this.gameState != 0) {
                 console.log("All players disconnected, restarting game");
             }
-            this.roundState = 0;
+            this.gameState = 0;
         }
 
         //console.log(`queue: ${this.playerQueue}`);
         //console.log(`purgatory: ${this.purgatory}`);
         //console.log(`players: ${this.players}`);
-        //console.log(this.roundState);
+        //console.log(this.gameState);
     }
 
     chatMessage(id, message) {
@@ -513,7 +542,7 @@ socket.on('connection', (ws) => {
             } else if (type === "startHand") {
                 poker.startHand();
             } else if (type === "action") {
-                if (poker.roundState == 1 && clients.has(data.id)) {
+                if (poker.gameState == 1 && clients.has(data.id)) {
                     poker.action(data.id, data.action, data.raise);
                 }
             } else {
@@ -559,6 +588,12 @@ function jsonChips(chips) {
     return jsonMessage("chips", {
         chips: chips
     });
+}
+
+function jsonCommunity(cards) {
+    return jsonMessage("communityCards", {
+        cards: cards
+    })
 }
 
 function jsonNamesList(names) {

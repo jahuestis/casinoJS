@@ -7,7 +7,9 @@ let displayName = "anon";
 let playerID;
 let myTurn = false;
 
+
 let playerNames = [];
+let communityCards = [];
 
 function updateChips() {
     socket.send(jsonFreeChips());
@@ -54,9 +56,18 @@ class PokerCard {
     }
 
     flip() {
-        this.faceUp = !this.faceUp;
+        this.setFace(!this.faceUp);
+    }
+
+    setFace(up) {
+        this.faceUp = up;
         this.image = this.faceUp ? cardImages[this.card] : cardBack;
         this.element.src = this.image.src
+    }
+
+    setCard(card) {
+        this.card = card;
+        this.setFace(this.faceUp);
     }
 
 }
@@ -318,8 +329,8 @@ socket.onmessage = (event) => {
         const playerStack = createDiv([playerInfoDiv, chatStack], "player-stack");
 
         const holeDiv = createDiv([], "hole-div");
-        const riverDiv = createDiv([], "river-div");
-        const cardDiv = createDiv([riverDiv, holeDiv], "card-div");
+        const communityDiv = createDiv([], "community-div");
+        const cardDiv = createDiv([communityDiv, holeDiv], "card-div");
         const buttonDiv = createDiv(createActionButtons(), "action-div");
         const turnIndicator = createHeading("", 2, "turn-indicator");
         const pokerStack = createDiv([chipsCounter, cardDiv, turnIndicator, buttonDiv], "poker-stack");
@@ -341,9 +352,18 @@ socket.onmessage = (event) => {
         for (let i = 0; i < hole.length; i++) {
             holeDiv.appendChild(hole[i].element);
         }
-        const riverDiv = document.getElementById("river-div");
+        const communityDiv = document.getElementById("community-div");
+        communityCards = [];
         for (let i = 0; i < 5; i++) {
-            riverDiv.appendChild(createCardWithElement(0, false, false).element);
+            communityCards.push(createCardWithElement(0, false, false));
+            communityDiv.appendChild(communityCards[i].element);
+        }
+    } else if (messageType === "communityCards") {
+        console.log(`received community cards: ${data.cards}`);
+        const cards = data.cards
+        for (let i = 0; i < cards.length; i++) {
+            communityCards[i].setCard(cards[i]);
+            communityCards[i].setFace(true);
         }
     } else if (messageType === "yourTurn") {
         if (!myTurn) console.log("your turn");
