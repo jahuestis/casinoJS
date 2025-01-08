@@ -148,6 +148,12 @@ class PokerGame {
             default:
                 console.error("Invalid turn value:", this.turn);
         }
+        this.players.forEach(player => {
+            if (!player.folded) {
+                player.setLastAction("...");
+            }
+        })
+        this.broadcastDetails();
         this.lastAction = "check";
         this.turnID = this.turnOrder[this.turnOrder.length - 1]
         this.nextTurn(false);
@@ -460,7 +466,7 @@ class PokerPlayer {
         this.timeInPurgatory = 0;
         this.chips = chips;
         this.bet = 0;
-        this.lastAction = "";
+        this.lastAction = "...";
         this.folded = false;
         this.kickMe = false;
     }

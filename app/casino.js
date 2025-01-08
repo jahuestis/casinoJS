@@ -287,9 +287,9 @@ socket.onmessage = (event) => {
         }
         details.forEach(player => {
             if (!players.has(player.name)) {
-                players.set(player.name, new liveHeading(`${player.name} (${player.chips}): `, 2, "player-info"));
+                players.set(player.name, new liveHeading(`${player.name} (${player.chips}): ${player.lastAction}`, 2, "player-info"));
             } else {
-                players.get(player.name).setText(`${player.name} (${player.chips}): `);
+                players.get(player.name).setText(`${player.name} (${player.chips}): ${player.lastAction}`);
             }
         });
         const namesPreviewElement = document.getElementById("preview-players");
