@@ -95,7 +95,7 @@ class PokerGame {
             this.resetBets();
             this.blind(this.players[0], this.minRaise, "small");
             this.blind(this.players[1], this.minRaise, "big");
-            this.broadcastNames();
+            this.broadcastDetails();
             this.broadcastToPlayers(jsonMessage("handStart", 0));
             this.restoreDeck();
             this.deal();
@@ -200,13 +200,16 @@ class PokerGame {
     removePlayer(id) {
         const player = this.getPlayer(id);
         if (player) {
-            this.fold(player);
-            //player.setLastAction("abandoned");
+            if (this.gameState == 1) {
+                this.fold(player);
+                player.prepareKick();
+                return;
+            }
         }
         this.playerQueue = this.playerQueue.filter(player => player.id !== id);
         this.purgatory = this.purgatory.filter(player => player.id !== id);
         this.players = this.players.filter(player => player.id !== id);
-        this.broadcastNames();
+        this.broadcastDetails(true);
         if (this.players.length <= 1 && this.gameState == 0) {
             this.broadcastToPlayers(jsonMessage("roundUnready", 0));
         }
@@ -224,7 +227,7 @@ class PokerGame {
                     if (player) {
                         this.players.push(player);
                         this.purgatory = this.purgatory.filter(player => player.id !== id);
-                        this.broadcastNames();
+                        this.broadcastDetails(true);
                         if (this.players.length > 1) {
                             this.broadcastToPlayers(jsonMessage("roundReady", 0));
                         }
@@ -407,7 +410,7 @@ class PokerGame {
         this.broadcastToPlayers(jsonNamesList(playerNames));
     }
 
-    broadcastDetails(player = null) {
+    broadcastDetails(clear = false, player = null) {
         let details = []
         if (!player) {
             this.players.forEach(player => {
@@ -417,7 +420,7 @@ class PokerGame {
             details.push(this.formatDetails(player))
         }
 
-        this.broadcastToPlayers(jsonDetails(details));
+        this.broadcastToPlayers(jsonDetails(details, clear));
     }
 
     formatDetails(player) {
@@ -448,6 +451,7 @@ class PokerPlayer {
         this.bet = 0;
         this.lastAction = "";
         this.folded = false;
+        this.kickMe = false;
     }
 
     incrementTimeInPurgatory() {
@@ -516,6 +520,16 @@ class PokerPlayer {
 
     unfold() {
         this.folded = false;
+    }
+
+    prepareKick() {
+        this.kickMe = true;
+        console.log(`prepared to kick ${this.name}`);
+    }
+
+    unprepareKick() {
+        this.kickMe = false;
+        console.log(`unprepared to kick ${this.name}`);
     }
 
 }
@@ -644,9 +658,10 @@ function jsonDeal(hole) {
     });
 }
 
-function jsonDetails(details) {
+function jsonDetails(details, clear = false) {
     return jsonMessage("details", {
-        details: details
+        details: details,
+        clear: clear
     });
 }
 

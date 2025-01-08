@@ -7,8 +7,7 @@ let displayName = "anon";
 let playerID;
 let myTurn = false;
 
-
-let playerNames = [];
+const players = new Map();
 let communityCards = [];
 
 function updateChips() {
@@ -134,7 +133,7 @@ function createActionButtons() {
     return buttons;
 }
 
-class loadingHeading {
+class liveHeading {
     constructor(text = "", headingSize = 1, id = "loading-heading", classes = []) {
         this.text = text;
         this.element = createHeading(this.text, headingSize, id, classes);
@@ -184,7 +183,7 @@ function pokerQueueScreen() {
     while (gameArea.firstChild) {
         gameArea.firstChild.remove();
     }
-    const loading = new loadingHeading("waiting for game");
+    const loading = new liveHeading("waiting for game");
     loading.startAnimation(500, 4);
     const backButton = createButton("back");
     backButton.addEventListener("click", () => {
@@ -236,7 +235,7 @@ function listString(list) {
 }
 
 function previewPlayersString() {
-    return `playing: ${listString(playerNames)}`
+    return `playing: ${listString(Array.from(players.keys()))}`
 }
 
 const title = createHeading("casinoJS");
@@ -280,13 +279,23 @@ socket.onmessage = (event) => {
         console.log(`error: ${data.error}`);
         window.alert(`error: ${data.error}`);
         pokerQueued = false;
-    } else if (messageType === "namesList") {
-        playerNames = data.names;
+    } else if (messageType === "details") {
+        const details = data.details;
+        const clear = data.clear;
+        if (clear) {
+            players.clear();
+        }
+        details.forEach(player => {
+            if (!players.has(player.name)) {
+                players.set(player.name, new liveHeading(`${player.name} (${player.chips}): `, 2, "player-info"));
+            } else {
+                players.get(player.name).setText(`${player.name} (${player.chips}): `);
+            }
+        });
         const namesPreviewElement = document.getElementById("preview-players");
         if (namesPreviewElement) {
             namesPreviewElement.textContent = previewPlayersString();
         }
-        console.log(`received display names: ${playerNames}`);
     } else if (messageType === "roundReady") {
         if (pokerQueued && !document.getElementById("start-round")) {
             console.log("round ready to start");
@@ -322,8 +331,8 @@ socket.onmessage = (event) => {
         const chatStack = createDiv([chatDiv, createSpacer(), chatInputDiv], "chat-stack");
         const playerInfoDiv = createDiv([], "player-info-div");
         playerInfoDiv.appendChild(createHeading("players:", 2, "player-info"));
-        playerNames.forEach(name => {
-            playerInfoDiv.appendChild(createHeading(name, 2, "player-info"));
+        Array.from(players.keys()).forEach(name => {
+            playerInfoDiv.appendChild(players.get(name).element);
         })
 
         const playerStack = createDiv([playerInfoDiv, chatStack], "player-stack");
