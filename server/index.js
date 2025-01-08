@@ -142,6 +142,9 @@ class PokerGame {
             case 3:
                 this.reveal(5);
                 break;
+            case 4:
+                console.log("Hand over");
+                break
             default:
                 console.error("Invalid turn value:", this.turn);
         }
