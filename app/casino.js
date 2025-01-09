@@ -178,6 +178,8 @@ class liveHeading {
         }
     }
 }
+const betHeading = new liveHeading("bet: 0", 2, "bet-heading");
+const potHeading = new liveHeading("pot: 0", 2, "pot-heading");
 
 function pokerQueueScreen() {
     while (gameArea.firstChild) {
@@ -297,6 +299,8 @@ socket.onmessage = (event) => {
                 players.get(details.name).setText(detailsString(details));
             }
         });
+        betHeading.setText(`bet: ${data.bet}`);
+        potHeading.setText(`pot: ${data.pot}`);
         const namesPreviewElement = document.getElementById("preview-players");
         if (namesPreviewElement) {
             namesPreviewElement.textContent = previewPlayersString();
@@ -334,7 +338,7 @@ socket.onmessage = (event) => {
         })
         const chatInputDiv = createDiv([chatInput,chatSend], "chat-input-div");
         const chatStack = createDiv([chatDiv, createSpacer(), chatInputDiv], "chat-stack");
-        const playerInfoDiv = createDiv([], "player-info-div");
+        const playerInfoDiv = createDiv([betHeading.element, potHeading.element], "player-info-div");
         Array.from(players.keys()).forEach(name => {
             playerInfoDiv.appendChild(players.get(name).element);
         })

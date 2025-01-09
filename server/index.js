@@ -20,6 +20,7 @@ class PokerGame {
         this.defaultMinRaise = 25;
         this.minRaise = this.defaultMinRaise;
         this.bet = 0;
+        this.pot = 0;
         this.folded = 0;
         this.lastAction = "";
         this.lastRaiseID;
@@ -82,7 +83,7 @@ class PokerGame {
 
     startHand() {
         if (this.gameState == 0 && this.players.length > 1) {
-            //shuffleArray(this.players);
+            this.pot = 0;
             this.turnIndex = 2 % this.players.length;
             this.lastRaiseID = this.players[this.turnIndex].id;
             this.round = 0;
@@ -318,7 +319,7 @@ class PokerGame {
     }
 
     call(player) {
-        if (this.bet > 0 && player.chips + player.bet>= this.bet) {
+        if (this.bet > 0 && player.chips + player.bet >= this.bet) {
             player.setBet(this.bet);
             this.setLastAction("called", player);
             console.log(`${player.name} (${player.chips}) called (${this.bet})`)
@@ -346,6 +347,10 @@ class PokerGame {
             console.log(`${player.name} could not check`)
             return false;
         }
+    }
+
+    increasePot(amount) {
+        this.pot += amount;
     }
 
     update() {
@@ -430,7 +435,7 @@ class PokerGame {
             details.push(this.formatDetails(player))
         }
 
-        this.broadcastToPlayers(jsonDetails(details, clear));
+        this.broadcastToPlayers(jsonDetails(details, this.bet, this.pot, clear));
     }
 
     formatDetails(player) {
@@ -481,7 +486,9 @@ class PokerPlayer {
     }
 
     setBet(newBet) {
-        this.chips -= (newBet - this.bet);
+        const betAmount = newBet - this.bet;
+        poker.increasePot(betAmount);
+        this.chips -= betAmount;
         this.bet = newBet;
         this.sendChips();
     }
@@ -668,9 +675,11 @@ function jsonDeal(hole) {
     });
 }
 
-function jsonDetails(details, clear = false) {
+function jsonDetails(details, bet, pot, clear = false) {
     return jsonMessage("details", {
         details: details,
+        bet: bet,
+        pot: pot,
         clear: clear
     });
 }

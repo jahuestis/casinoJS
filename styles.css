@@ -134,7 +134,7 @@ a {
 }
 
 
-#player-info, #chat-message {
+#player-info, #chat-message, #bet-heading, #pot-heading {
     margin: .85rem;
     overflow-wrap: break-word;
 }
