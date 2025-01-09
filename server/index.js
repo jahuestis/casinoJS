@@ -17,7 +17,8 @@ class PokerGame {
         this.turnIndex = 0;
         this.deck = [];
         this.community = [];
-        this.minRaise = 25;
+        this.defaultMinRaise = 25;
+        this.minRaise = this.defaultMinRaise;
         this.bet = 0;
         this.folded = 0;
         this.lastAction = "";
@@ -86,7 +87,7 @@ class PokerGame {
             this.lastRaiseID = this.players[this.turnIndex].id;
             this.round = 0;
             this.gameState = 1;
-            this.minRaise = 25;
+            this.minRaise = this.defaultMinRaise;
             this.folded = 0;
             this.lastAction = "startHand";
             console.log(`Starting hand with ${this.players.length} players`);
@@ -146,6 +147,7 @@ class PokerGame {
                 player.setLastAction("...");
             }
         })
+        this.resetBets()
         this.broadcastDetails();
         this.lastAction = "check";
         this.turnIndex = this.players.length - 1;
@@ -161,6 +163,7 @@ class PokerGame {
     }
 
     resetBets() {
+        this.minRaise = this.defaultMinRaise;
         this.bet = 0;
         this.players.forEach(player => {
             player.bet = 0;
@@ -283,7 +286,6 @@ class PokerGame {
 
     blind(player, amount, blindSize) {
         if (player.chips + player.bet >= this.bet + amount) {
-            this.minRaise = amount;
             this.bet = this.bet + amount;
             player.setBet(this.bet);
             this.setLastAction(`${blindSize} blind`, player);
@@ -316,7 +318,7 @@ class PokerGame {
     }
 
     call(player) {
-        if (player.chips + player.bet>= this.bet) {
+        if (this.bet > 0 && player.chips + player.bet>= this.bet) {
             player.setBet(this.bet);
             this.setLastAction("called", player);
             console.log(`${player.name} (${player.chips}) called (${this.bet})`)
