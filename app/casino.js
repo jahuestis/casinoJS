@@ -238,6 +238,11 @@ function previewPlayersString() {
     return `playing: ${listString(Array.from(players.keys()))}`
 }
 
+function detailsString(details) {
+    return `${details.name} (${details.chips}) ${details.lastAction}`;
+
+}
+
 const title = createHeading("casinoJS");
 const chipsCounter = createHeading("chips: 0", 1, "chips-counter");
 const chipsButton = createButton("get chips");
@@ -285,11 +290,11 @@ socket.onmessage = (event) => {
         if (clear) {
             players.clear();
         }
-        details.forEach(player => {
-            if (!players.has(player.name)) {
-                players.set(player.name, new liveHeading(`${player.name} (${player.chips}): ${player.lastAction}`, 2, "player-info"));
+        details.forEach(details => {
+            if (!players.has(details.name)) {
+                players.set(details.name, new liveHeading(detailsString(details), 2, "player-info"));
             } else {
-                players.get(player.name).setText(`${player.name} (${player.chips}): ${player.lastAction}`);
+                players.get(details.name).setText(detailsString(details));
             }
         });
         const namesPreviewElement = document.getElementById("preview-players");
