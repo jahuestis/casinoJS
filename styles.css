@@ -33,7 +33,7 @@ button, input {
     text-align: center;
     border: .3rem solid lime;
     background-color: transparent;
-    font-size: 2rem;
+    font-size: 1.75rem;
     padding: .25em;
     margin: .15em;   
     min-width: 6ch;
@@ -127,17 +127,17 @@ a {
 }
 
 #chat-input {
-    font-size: 2rem;
     text-align: left;
     width: 100%;
     min-width: 0;
 }
 
 
-#player-info, #chat-message, #bet-heading, #pot-heading {
+#player-info, #chat-message {
     margin: .85rem;
     overflow-wrap: break-word;
 }
+
 
 /* poker area */
 
@@ -180,14 +180,17 @@ a {
     min-height: 0px;
 }
 
+#game-info {
+    margin-top: 2rem;
+}
 
 #turn-indicator {
     height: 2rem;
-    margin: 1vh;
+    margin: 0;
 }
 
 .cards {
-    width: 12rem;
+    width: 10rem;
     margin: .25rem;
 }
 

@@ -17,8 +17,8 @@ class PokerGame {
         this.turnIndex = 0;
         this.deck = [];
         this.community = [];
-        this.defaultMinRaise = 25;
-        this.minRaise = this.defaultMinRaise;
+        this.defaultMinRaise = 0;
+        this.minRaise = 0;
         this.bet = 0;
         this.pot = 0;
         this.folded = 0;
@@ -88,9 +88,19 @@ class PokerGame {
             this.lastRaiseID = this.players[this.turnIndex].id;
             this.round = 0;
             this.gameState = 1;
-            this.minRaise = this.defaultMinRaise;
             this.folded = 0;
             this.lastAction = "startHand";
+
+            // determine min raise based on average chip count
+            let totalChips = 0;
+            this.players.forEach(player => {
+                totalChips += player.chips;
+            });
+            const averageChips = totalChips / this.players.length;
+            this.defaultMinRaise = Math.ceil(averageChips / 150) * 5;
+            this.minRaise = this.defaultMinRaise;
+            console.log(`Min raise set to ${this.minRaise}`);
+            
             console.log(`Starting hand with ${this.players.length} players`);
             this.resetBets();
             this.blind(this.players[0], this.minRaise, "small");
@@ -435,7 +445,7 @@ class PokerGame {
             details.push(this.formatDetails(player))
         }
 
-        this.broadcastToPlayers(jsonDetails(details, this.bet, this.pot, clear));
+        this.broadcastToPlayers(jsonDetails(details, this.minRaise, this.bet, this.pot, clear));
     }
 
     formatDetails(player) {
@@ -675,9 +685,10 @@ function jsonDeal(hole) {
     });
 }
 
-function jsonDetails(details, bet, pot, clear = false) {
+function jsonDetails(details, minRaise, bet, pot, clear = false) {
     return jsonMessage("details", {
         details: details,
+        minRaise: minRaise,
         bet: bet,
         pot: pot,
         clear: clear

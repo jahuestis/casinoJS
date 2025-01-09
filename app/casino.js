@@ -178,8 +178,6 @@ class liveHeading {
         }
     }
 }
-const betHeading = new liveHeading("bet: 0", 2, "bet-heading");
-const potHeading = new liveHeading("pot: 0", 2, "pot-heading");
 
 function pokerQueueScreen() {
     while (gameArea.firstChild) {
@@ -246,7 +244,8 @@ function detailsString(details) {
 }
 
 const title = createHeading("casinoJS");
-const chipsCounter = createHeading("chips: 0", 1, "chips-counter");
+const chipsCounter = createHeading("chips: 0", 2, "chips-counter");
+const gameInfo = createHeading("", 2, "game-info");
 const chipsButton = createButton("get chips");
 chipsButton.addEventListener("click", () => updateChips(25));
 const pokerButton = createButton("play poker");
@@ -299,8 +298,7 @@ socket.onmessage = (event) => {
                 players.get(details.name).setText(detailsString(details));
             }
         });
-        betHeading.setText(`bet: ${data.bet}`);
-        potHeading.setText(`pot: ${data.pot}`);
+        gameInfo.textContent = `bet: ${data.bet} | min raise: ${data.minRaise} | pot: ${data.pot}`;
         const namesPreviewElement = document.getElementById("preview-players");
         if (namesPreviewElement) {
             namesPreviewElement.textContent = previewPlayersString();
@@ -338,7 +336,7 @@ socket.onmessage = (event) => {
         })
         const chatInputDiv = createDiv([chatInput,chatSend], "chat-input-div");
         const chatStack = createDiv([chatDiv, createSpacer(), chatInputDiv], "chat-stack");
-        const playerInfoDiv = createDiv([betHeading.element, potHeading.element], "player-info-div");
+        const playerInfoDiv = createDiv([], "player-info-div");
         Array.from(players.keys()).forEach(name => {
             playerInfoDiv.appendChild(players.get(name).element);
         })
@@ -350,7 +348,7 @@ socket.onmessage = (event) => {
         const cardDiv = createDiv([communityDiv, holeDiv], "card-div");
         const buttonDiv = createDiv(createActionButtons(), "action-div");
         const turnIndicator = createHeading("", 2, "turn-indicator");
-        const pokerStack = createDiv([chipsCounter, cardDiv, turnIndicator, buttonDiv], "poker-stack");
+        const pokerStack = createDiv([chipsCounter, turnIndicator, cardDiv, gameInfo, buttonDiv], "poker-stack");
         const pokerWrapper = createDiv([pokerStack], "poker-wrapper");
         gameArea.appendChild(playerStack);
         gameArea.appendChild(pokerWrapper);
