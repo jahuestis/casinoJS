@@ -83,6 +83,7 @@ class PokerGame {
         if (this.gameState == 0 && this.players.length > 1) {
             //shuffleArray(this.players);
             this.turnIndex = 2 % this.players.length;
+            this.lastRaiseID = this.players[this.turnIndex].id;
             this.round = 0;
             this.gameState = 1;
             this.minRaise = 25;
@@ -286,7 +287,6 @@ class PokerGame {
             this.bet = this.bet + amount;
             player.setBet(this.bet);
             this.setLastAction(`${blindSize} blind`, player);
-            this.lastRaiseID = player.id;
             console.log(`${player.name} (${player.chips}) posted ${blindSize} blind (${this.bet})`);
             return true;
         } else {
@@ -336,7 +336,7 @@ class PokerGame {
     }
 
     check(player) {
-        if (this.lastAction == "check") {
+        if (this.bet == player.bet) {
             console.log(`${player.name} checked`)
             this.setLastAction("checked", player);
             return true;
