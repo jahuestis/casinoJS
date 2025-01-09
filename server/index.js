@@ -465,6 +465,108 @@ class PokerGame {
 
 }
 
+class PokerScorer {
+    constructor(hole, community) {
+        this.hole = hole;
+        this.hand = hole.concat(community);
+        this.hand.sort();
+        this.score = 0;
+    }
+
+    getRank(card) {
+        if (card == 0) return 1;
+        return Math.ceil(card / 4);
+    }
+
+    getSuit(card) {
+        return card % 4;
+    }
+
+    scoreLowCard() { // max score: 1
+        let score = this.getRank(Math.min(...this.hand)) / 13;
+        return score;
+    }
+
+    scoreHighCard() { // max score: 2
+        let score = 1 + this.getRank(Math.max(...this.hand)) / 13;
+        return score;
+
+    }
+
+    scorePair() { // max score: 4
+        let score = 0;
+        let counts = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        this.hand.forEach(card => {
+            counts[this.getRank(card)]++;
+        });
+        
+        for (let i = 1; i <= counts.length; i++) {
+            if (counts[i] >= 2) {
+                let value = 3 + i / 13
+                if (value > score) {
+                    score = value
+                }
+            }
+        }
+
+        return score;
+    }
+
+    scoreTwoPair() { // max score: 8
+
+
+    }
+
+    scoreThreeOfAKind() { // max score: 16
+        let score = 0;
+        let counts = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        this.hand.forEach(card => {
+            counts[this.getRank(card)]++;
+        });
+        
+        for (let i = 1; i <= counts.length; i++) {
+            if (counts[i] >= 3) {
+                let value = 15 + i / 13
+                if (value > score) {
+                    score = value
+                }
+            }
+        }
+
+        return score;
+    }
+
+    scoreStraight() { // max score: 32
+
+
+    }
+
+    scoreFlush() { // max score: 64
+
+
+    }
+
+    scoreFullHouse() { // max score: 128
+
+
+    }
+
+    scoreFourOfAKind() { // max score: 256
+
+
+    }
+
+    scoreStraightFlush() { // max score: 512
+
+
+    }
+
+    scoreRoyalFlush() { // max score: 1024
+
+
+    }
+}
+
 class PokerPlayer {
     constructor(id, ws, name, chips = 500) {
         this.id = id;
