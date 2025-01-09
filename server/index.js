@@ -14,11 +14,9 @@ class PokerGame {
         this.playerQueue = [];
         this.purgatory = [];
         this.players = [];
-        this.turnOrder = [];
-        this.turnID;
+        this.turnIndex = 0;
         this.deck = [];
         this.community = [];
-        this.revealed = 0;
         this.minRaise = 25;
         this.bet = 0;
         this.folded = 0;
@@ -69,7 +67,7 @@ class PokerGame {
     sendTurns() {
         this.players.forEach(player => {
             try {
-                if (player.id == this.turnID) {
+                if (player == this.players[this.turnIndex]) {
                     player.sendWS(jsonYourTurn());
                 } else {
                     player.sendWS(jsonNotYourTurn());
@@ -84,8 +82,7 @@ class PokerGame {
     startHand() {
         if (this.gameState == 0 && this.players.length > 1) {
             //shuffleArray(this.players);
-            this.turnOrder = this.players.map(player => player.id);
-            this.turnID = this.turnOrder[2 % this.players.length];
+            this.turnIndex = 2 % this.players.length;
             this.round = 0;
             this.gameState = 1;
             this.minRaise = 25;
@@ -105,27 +102,22 @@ class PokerGame {
     }
 
     nextTurn(checkRoundOver = true) {
-        let turnIndex = 0;
-
-        for (let i = 0; i < this.turnOrder.length; i++) {
-            if (this.turnOrder[i] == this.turnID) {
-                turnIndex = i;
-            }
-        }
         
-        this.turnID = this.turnOrder[(turnIndex += 1) % this.turnOrder.length];
-        const player = this.getPlayer(this.turnID);
-
-        if (this.turnID == this.lastRaiseID && checkRoundOver) {
+        this.turnIndex = (this.turnIndex + 1) % this.players.length;
+        const player = this.players[this.turnIndex];
+        
+        if (player.id == this.lastRaiseID && checkRoundOver) {
             console.log("Next round");
             this.nextRound();
             return;
         }
 
-        if ((!player && this.players.length > 0) || (player && (player.folded) && (this.folded < this.turnOrder.length))) {
+        if (!player || ((player.folded) && (this.folded < this.players.length))) {
             this.nextTurn(checkRoundOver);
         } else {
             console.log(`Next turn`);
+            player.setLastAction("...");
+            this.broadcastDetails();
             this.sendTurns();
         }
     }
@@ -155,9 +147,9 @@ class PokerGame {
         })
         this.broadcastDetails();
         this.lastAction = "check";
-        this.turnID = this.turnOrder[this.turnOrder.length - 1]
+        this.turnIndex = this.players.length - 1;
         this.nextTurn(false);
-        this.lastRaiseID = this.turnID;
+        this.lastRaiseID = this.players[this.turnIndex].id;
         
 
     }
@@ -219,7 +211,7 @@ class PokerGame {
         if (this.players.length <= 1 && this.gameState == 0) {
             this.broadcastToPlayers(jsonMessage("roundUnready", 0));
         }
-        if (this.gameState == 1 && this.turnID == id) {
+        if (this.gameState == 1 && this.players[this.turnIndex].id == id) {
             this.nextTurn();
         }
     }
@@ -253,7 +245,7 @@ class PokerGame {
     }
 
     action(id, action, raise) {
-        if (id == this.turnID) {
+        if (id == this.players[this.turnIndex].id) {
             console.log('valid player')
             let actionSuccessful = false;
             switch (action) {
@@ -277,8 +269,7 @@ class PokerGame {
             }
 
             if (actionSuccessful) {
-                this.broadcastDetails();
-                if (this.folded >= this.turnOrder.length - 1) {
+                if (this.folded >= this.players.length - 1) {
                     console.log('uncontested hand');
                 }
                 this.nextTurn();
@@ -309,7 +300,7 @@ class PokerGame {
             this.minRaise = amount;
             this.bet = this.bet + amount;
             player.setBet(this.bet);
-            this.setLastAction("raise", player);
+            this.setLastAction(`raised ${amount}`, player);
             this.lastRaiseID = player.id;
             console.log(`${player.name} (${player.chips}) raised by ${amount} (${this.bet})`)
             return true;
@@ -327,7 +318,7 @@ class PokerGame {
     call(player) {
         if (player.chips + player.bet>= this.bet) {
             player.setBet(this.bet);
-            this.setLastAction("call", player);
+            this.setLastAction("called", player);
             console.log(`${player.name} (${player.chips}) called (${this.bet})`)
             return true;
         } else {
@@ -338,7 +329,7 @@ class PokerGame {
 
     fold(player) {
         this.folded ++;
-        this.setLastAction("fold", player);
+        this.setLastAction("folded", player);
         player.fold();
         console.log(`${player.name} folded`)
         return true;
@@ -347,7 +338,7 @@ class PokerGame {
     check(player) {
         if (this.lastAction == "check") {
             console.log(`${player.name} checked`)
-            this.setLastAction("check", player);
+            this.setLastAction("checked", player);
             return true;
         } else {
             console.log(`${player.name} could not check`)
@@ -379,7 +370,7 @@ class PokerGame {
             this.sendTurns();
         }
 
-        if (this.folded >= this.turnOrder.length) {
+        if (this.folded >= this.players.length) {
             if (this.gameState != 0) {
                 console.log("All players disconnected, restarting game");
                 this.gameState = 0;

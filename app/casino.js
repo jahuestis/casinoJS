@@ -310,7 +310,7 @@ socket.onmessage = (event) => {
         while (gameArea.firstChild) {
             gameArea.removeChild(gameArea.firstChild);
         }
-        const chatDiv = createDiv([createHeading("chat:", 2, "chat-message")], "chat-div");
+        const chatDiv = createDiv([], "chat-div");
         const chatInput = createInput("", "chat-input");
         const chatSend = createButton("send", "chat-send");
         function sendMessage() {
@@ -330,7 +330,6 @@ socket.onmessage = (event) => {
         const chatInputDiv = createDiv([chatInput,chatSend], "chat-input-div");
         const chatStack = createDiv([chatDiv, createSpacer(), chatInputDiv], "chat-stack");
         const playerInfoDiv = createDiv([], "player-info-div");
-        playerInfoDiv.appendChild(createHeading("players:", 2, "player-info"));
         Array.from(players.keys()).forEach(name => {
             playerInfoDiv.appendChild(players.get(name).element);
         })
