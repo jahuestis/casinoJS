@@ -341,11 +341,16 @@ class PokerGame {
     }
 
     fold(player) {
-        this.folded ++;
-        this.setLastAction("folded", player);
-        player.fold();
-        console.log(`${player.name} folded`)
-        return true;
+        if (this.folded < this.players.length - 1) {
+            this.folded ++;
+            this.setLastAction("folded", player);
+            player.fold();
+            console.log(`${player.name} folded`)
+            return true;
+        } else {
+            console.log(`${player.name} could not fold`)
+        }
+        
     }
 
     check(player) {
