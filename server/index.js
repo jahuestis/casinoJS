@@ -473,13 +473,14 @@ class PokerGame {
 class PokerScorer {
     constructor(hole, community) {
         this.hole = hole;
+        this.community = community;
         this.hand = hole.concat(community);
         this.score = 0;
     }
 
     getRank(card) {
-        if (card == 0) return 1;
-        return Math.ceil(card / 4);
+        if (card == 0) return 2;
+        return Math.ceil(card / 4) + 1;
     }
 
     getSuit(card) {
@@ -487,48 +488,59 @@ class PokerScorer {
     }
 
     scoreLowCard() { // max score: 1
-        let score = this.getRank(Math.min(...this.hand)) / 13;
+        let score = this.getRank(Math.min(...this.hand)) / 14;
         console.log(`low card scored ${score}`);
         return score;
     }
 
     scoreHighCard() { // max score: 2
-        let score = 1 + this.getRank(Math.max(...this.hand)) / 13;
+        let score = 1 + this.getRank(Math.max(...this.hand)) / 14;
         console.log(`high card scored ${score}`);
         return score;
 
     }
 
     scorePair() { // max score: 4
-        let counts = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        let counts = new Map();
         this.hand.forEach(card => {
-            counts[this.getRank(card)]++;
+            const rank = this.getRank(card);
+            if (counts.has(rank)) {
+                counts.set(rank, counts.get(rank) + 1);
+            } else {
+                counts.set(rank, 1);
+            }
         });
-        
+
         let score = 0;
-        for (let i = 1; i < counts.length; i++) {
-            if (counts[i] >= 2) {
-                let value = 3 + (i / 13);
+        counts.forEach((count, rank) => {
+            if (count >= 2) {
+                let value = 15 + (rank / 14);
                 if (value > score) {
-                    score = value
+                    score = value;
                 }
             }
-        }
+        })
+
         console.log(`pair scored ${score}`);
         return score;
     }
 
     scoreTwoPair() { // max score: 8
-        let counts = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        let counts = new Map();
         this.hand.forEach(card => {
-            counts[this.getRank(card)]++;
+            const rank = this.getRank(card);
+            if (counts.has(rank)) {
+                counts.set(rank, counts.get(rank) + 1);
+            } else {
+                counts.set(rank, 1);
+            }
         });
 
         let pair1 = 0;
         let pair2 = 0;
-        for (let i = 1; i < counts.length; i++) {
-            if (counts[i] >= 2) {
-                let value = 7 + (i / 13);
+        counts.forEach((count, rank) => {
+            if (count >= 2) {
+                let value = 7 + (rank / 14);
                 if (value >= pair2) {
                     pair2 = value;
                     pair1 = pair2;
@@ -536,30 +548,35 @@ class PokerScorer {
                     pair1 = value;
                 }
             }
-        }
+        })
 
-        let score = (score1 > 0 && score2 > 0) ? (score1 + score2) / 2 : 0
+        let score = (pair1 > 0 && pair2 > 0) ? (pair1 + pair2) / 2 : 0
         console.log(`two pair scored ${score}`);
         return score;
     }
 
     scoreThreeOfAKind() { // max score: 16
-        let counts = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        let counts = new Map();
         this.hand.forEach(card => {
-            counts[this.getRank(card)]++;
+            const rank = this.getRank(card);
+            if (counts.has(rank)) {
+                counts.set(rank, counts.get(rank) + 1);
+            } else {
+                counts.set(rank, 1);
+            }
         });
-        
+
         let score = 0;
-        for (let i = 1; i < counts.length; i++) {
-            if (counts[i] >= 3) {
-                let value = 15 + (i / 13);
+        counts.forEach((count, rank) => {
+            if (count >= 3) {
+                let value = 15 + (rank / 14);
                 if (value > score) {
                     score = value;
                 }
             }
-        }
+        })
 
-        console.log(`three of a kind scored ${score}`);
+        console.log(`three-of-a-kind scored ${score}`);
         return score;
     }
 
@@ -584,12 +601,12 @@ class PokerScorer {
                     break;
                 } else {
                     if (j == 4) {
-                        value = (ranks[j] / 13);
+                        value = 31 + (ranks[j] / 14);
                     }
                 }
             }
             if (value > score) {
-                score = 31 + value;
+                score = value;
             }
         }
 
@@ -598,7 +615,35 @@ class PokerScorer {
     }
 
     scoreFlush() { // max score: 64
+        let hearts = []
+        let spades = []
+        let clubs = []
+        let diamonds = []
 
+        let score = 0;
+        let flush = -1;
+        if (hearts.length >= 5) flush = 0;
+        else if (spades.length >= 5) 1;
+        else if (clubs.length >= 5) flush = 2;
+        else if (diamonds.length >= 5) flush = 3;
+
+        let fromHole = []
+        if (flush >= 0) {
+            this.hole.forEach(card => {
+                if (this.getSuit(card) == flush) {
+                    fromHole.push(card);
+                }
+            })
+            
+            if (fromHole.length > 0) {
+                score = 63 + (this.getRank(Math.max(...fromHole)) / 14);
+            } else {
+                score = 63.01;
+            }
+        }
+
+        console.log(`flush scored ${score}`);
+        return score;
 
     }
 
@@ -608,21 +653,27 @@ class PokerScorer {
     }
 
     scoreFourOfAKind() { // max score: 256
-        let counts = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        let counts = new Map();
         this.hand.forEach(card => {
-            counts[this.getRank(card)]++;
+            const rank = this.getRank(card);
+            if (counts.has(rank)) {
+                counts.set(rank, counts.get(rank) + 1);
+            } else {
+                counts.set(rank, 1);
+            }
         });
-        
+
         let score = 0;
-        for (let i = 1; i < counts.length; i++) {
-            if (counts[i] >= 4) {
-                let value = 255 + (i / 13);
+        counts.forEach((count, rank) => {
+            if (count >= 4) {
+                let value = 255 + (rank / 14);
                 if (value > score) {
-                    score = value
+                    score = value;
                 }
             }
-        }
+        })
 
+        console.log(`four-of-a-kind scored ${score}`);
         return score;
     }
 
