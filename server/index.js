@@ -648,8 +648,42 @@ class PokerScorer {
     }
 
     scoreFullHouse() { // max score: 128
+        let counts = new Map();
+        this.hand.forEach(card => {
+            const rank = this.getRank(card);
+            if (counts.has(rank)) {
+                counts.set(rank, counts.get(rank) + 1);
+            } else {
+                counts.set(rank, 1);
+            }
+        });
 
+        let score = 0;
 
+        let tripleRank = 0;
+        counts.forEach((count, rank) => {
+            if (count >= 3) {
+                if (rank > tripleRank) {
+                    tripleRank = rank;
+                }
+            }
+        })
+
+        let pairRank = 0;
+        counts.forEach((count, rank) => {
+            if (count >= 2 && rank != tripleRank) {
+                if (rank > pairRank) {
+                    pairRank = rank;
+                }
+            }
+        })
+
+        if (pairRank > 0 && tripleRank > 0) {
+            score = 127 + (tripleRank / 14) * .5 + (pairRank / 14) * .25;
+        }
+
+        console.log(`full house scored ${score}`);
+        return score;
     }
 
     scoreFourOfAKind() { // max score: 256
