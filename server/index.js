@@ -494,15 +494,15 @@ class PokerScorer {
     }
 
     scorePair() { // max score: 4
-        let score = 0;
         let counts = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         this.hand.forEach(card => {
             counts[this.getRank(card)]++;
         });
         
-        for (let i = 1; i <= counts.length; i++) {
+        let score = 0;
+        for (let i = 1; i < counts.length; i++) {
             if (counts[i] >= 2) {
-                let value = 3 + i / 13
+                let value = 3 + (i / 13);
                 if (value > score) {
                     score = value
                 }
@@ -513,22 +513,45 @@ class PokerScorer {
     }
 
     scoreTwoPair() { // max score: 8
+        let counts = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        this.hand.forEach(card => {
+            counts[this.getRank(card)]++;
+        });
 
+        let score1 = 0;
+        let score2 = 0;
+        for (let i = 1; i < counts.length; i++) {
+            if (counts[i] >= 2) {
+                let value = 7 + (i / 13);
+                if (value >= score2) {
+                    score2 = value;
+                    score1 = score2;
+                } else if (value > score1) {
+                    score1 = value;
+                }
+            }
+        }
+
+        if (score1 > 0 && score2 > 0) {
+            return (score1 + score2) / 2;
+        } else {
+            return 0;
+        }
 
     }
 
     scoreThreeOfAKind() { // max score: 16
-        let score = 0;
         let counts = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         this.hand.forEach(card => {
             counts[this.getRank(card)]++;
         });
         
-        for (let i = 1; i <= counts.length; i++) {
+        let score = 0;
+        for (let i = 1; i < counts.length; i++) {
             if (counts[i] >= 3) {
-                let value = 15 + i / 13
+                let value = 15 + (i / 13);
                 if (value > score) {
-                    score = value
+                    score = value;
                 }
             }
         }
@@ -552,8 +575,22 @@ class PokerScorer {
     }
 
     scoreFourOfAKind() { // max score: 256
+        let counts = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        this.hand.forEach(card => {
+            counts[this.getRank(card)]++;
+        });
+        
+        let score = 0;
+        for (let i = 1; i < counts.length; i++) {
+            if (counts[i] >= 4) {
+                let value = 255 + (i / 13);
+                if (value > score) {
+                    score = value
+                }
+            }
+        }
 
-
+        return score;
     }
 
     scoreStraightFlush() { // max score: 512
