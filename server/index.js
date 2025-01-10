@@ -329,7 +329,7 @@ class PokerGame {
     }
 
     call(player) {
-        if (this.bet > 0 && player.chips + player.bet >= this.bet) {
+        if (this.bet > 0 && player.chips + player.bet >= this.bet && player.bet < this.bet) {
             player.setBet(this.bet);
             this.setLastAction("called", player);
             console.log(`${player.name} (${player.chips}) called (${this.bet})`)

@@ -181,12 +181,12 @@ a {
 }
 
 #game-info {
-    margin-top: 2rem;
+    margin-top: 0;
 }
 
 #turn-indicator {
     height: 2rem;
-    margin: 0;
+    margin-bottom: 1rem;
 }
 
 .cards {

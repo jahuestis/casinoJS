@@ -348,7 +348,7 @@ socket.onmessage = (event) => {
         const cardDiv = createDiv([communityDiv, holeDiv], "card-div");
         const buttonDiv = createDiv(createActionButtons(), "action-div");
         const turnIndicator = createHeading("", 2, "turn-indicator");
-        const pokerStack = createDiv([chipsCounter, turnIndicator, cardDiv, gameInfo, buttonDiv], "poker-stack");
+        const pokerStack = createDiv([chipsCounter, gameInfo, cardDiv, turnIndicator, buttonDiv], "poker-stack");
         const pokerWrapper = createDiv([pokerStack], "poker-wrapper");
         gameArea.appendChild(playerStack);
         gameArea.appendChild(pokerWrapper);
