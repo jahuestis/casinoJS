@@ -488,11 +488,13 @@ class PokerScorer {
 
     scoreLowCard() { // max score: 1
         let score = this.getRank(Math.min(...this.hand)) / 13;
+        console.log(`low card scored ${score}`);
         return score;
     }
 
     scoreHighCard() { // max score: 2
         let score = 1 + this.getRank(Math.max(...this.hand)) / 13;
+        console.log(`high card scored ${score}`);
         return score;
 
     }
@@ -512,7 +514,7 @@ class PokerScorer {
                 }
             }
         }
-
+        console.log(`pair scored ${score}`);
         return score;
     }
 
@@ -522,26 +524,23 @@ class PokerScorer {
             counts[this.getRank(card)]++;
         });
 
-        let score1 = 0;
-        let score2 = 0;
+        let pair1 = 0;
+        let pair2 = 0;
         for (let i = 1; i < counts.length; i++) {
             if (counts[i] >= 2) {
                 let value = 7 + (i / 13);
-                if (value >= score2) {
-                    score2 = value;
-                    score1 = score2;
-                } else if (value > score1) {
-                    score1 = value;
+                if (value >= pair2) {
+                    pair2 = value;
+                    pair1 = pair2;
+                } else if (value > pair1) {
+                    pair1 = value;
                 }
             }
         }
 
-        if (score1 > 0 && score2 > 0) {
-            return (score1 + score2) / 2;
-        } else {
-            return 0;
-        }
-
+        let score = (score1 > 0 && score2 > 0) ? (score1 + score2) / 2 : 0
+        console.log(`two pair scored ${score}`);
+        return score;
     }
 
     scoreThreeOfAKind() { // max score: 16
@@ -560,6 +559,7 @@ class PokerScorer {
             }
         }
 
+        console.log(`three of a kind scored ${score}`);
         return score;
     }
 
@@ -592,6 +592,8 @@ class PokerScorer {
                 score = 31 + value;
             }
         }
+
+        console.log(`straight scored ${score}`);
         return score;
     }
 
