@@ -474,7 +474,6 @@ class PokerScorer {
     constructor(hole, community) {
         this.hole = hole;
         this.hand = hole.concat(community);
-        this.hand.sort();
         this.score = 0;
     }
 
@@ -565,8 +564,35 @@ class PokerScorer {
     }
 
     scoreStraight() { // max score: 32
+        let score = 0;
 
+        // get ranks and ignore duplicates
+        let ranks = [];
+        for (let i = 0; i < 7; i++) {
+            const rank = this.getRank(this.hand[i]);
+            if (!ranks.includes(rank)) {
+                ranks.push(rank);
+            }
+        }
+        ranks.sort();
 
+        // check for straights
+        for (let i = 0; i < ranks.length - 4; i++) {
+            let value = 0;
+            for (let j = 0; j < 5; j++) {
+                if (j > 0 && ranks[i + j] != ranks[ i + j - 1] + 1) {
+                    break;
+                } else {
+                    if (j == 4) {
+                        value = (ranks[j] / 13);
+                    }
+                }
+            }
+            if (value > score) {
+                score = 31 + value;
+            }
+        }
+        return score;
     }
 
     scoreFlush() { // max score: 64
