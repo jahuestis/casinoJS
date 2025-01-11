@@ -23,7 +23,7 @@ let totalClicks = 0;
 
 // images
 const suits = ["H", "S", "C", "D"];
-const cardImages = [];
+const cardImages = new Map();
 const cardBack = new Image();
 const totalAssets = 53;
 let assetsLoaded = 0;
@@ -38,7 +38,7 @@ class PokerCard {
         this.card = card;
         this.faceUp = faceUp;
         this.element =  element
-        this.image = this.faceUp ? cardImages[this.card] : cardBack;
+        this.setFace(faceUp);
         if (element) {
             this.element.src = this.image.src
             if (flippable) {
@@ -60,13 +60,17 @@ class PokerCard {
 
     setFace(up) {
         this.faceUp = up;
-        this.image = this.faceUp ? cardImages[this.card] : cardBack;
+        this.image = this.faceUp ? cardImages.get(this.cardToKey()) : cardBack;
         this.element.src = this.image.src
     }
 
     setCard(card) {
         this.card = card;
         this.setFace(this.faceUp);
+    }
+
+    cardToKey() {
+        return this.card.rank + this.card.suit;
     }
 
 }
@@ -358,6 +362,7 @@ socket.onmessage = (event) => {
         requestAnimationFrame(() => fixChatHeight());
     } else if (messageType === "deal") {
         const newHole = data.hole;
+        console.log(newHole);
         console.log(`received hole: ${newHole}`);
         hole = [];
         for (let i = 0; i < newHole.length; i++) {
@@ -375,7 +380,7 @@ socket.onmessage = (event) => {
         }
     } else if (messageType === "communityCards") {
         console.log(`received community cards: ${data.cards}`);
-        const cards = data.cards
+        const cards = data.cards;
         for (let i = 0; i < cards.length; i++) {
             communityCards[i].setCard(cards[i]);
             communityCards[i].setFace(true);
@@ -498,10 +503,10 @@ window.onload = () => {
     gameArea.appendChild(loadingDiv);
     requestAnimationFrame(() => {loadingScreen(loadingDiv, loadingText)});
     for (let i = 2; i <= 14; i++) {
-        for (let j = 0; j < suits.length; j++) {
+        for (let j = 0; j < 4; j++) {
             const image = new Image();
             image.src = "/images/cards/" + i + suits[j] + ".png";
-            cardImages.push(image);
+            cardImages.set(i + suits[j], image);
             image.onload = () => assetsLoaded++;
         }
     }

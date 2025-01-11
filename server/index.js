@@ -6,6 +6,8 @@ const socket = new WebSocketServer({
 });
 let testPlayerCounter = 0;
 
+const suits = ["H", "S", "C", "D"];
+
 class PokerGame {
     constructor() {
         this.maxPlayers = 8;
@@ -35,8 +37,11 @@ class PokerGame {
 
     restoreDeck() {
         this.deck = [];
-        for (let i = 0; i < 52; i++) {
-            this.deck.push(i);
+
+        for (let i = 2; i <= 14; i++) {
+            for (let j = 0; j < 4; j++) {
+                this.deck.push(new jsonCard(i, suits[j]));
+            }
         }
     }
 
@@ -369,6 +374,7 @@ class PokerGame {
     }
 
     update() {
+        console.log("update");
         if (this.gameState == 0) {
             // Move players to purgatory for queue confirmation if space available in game
             while (this.players.length < this.maxPlayers && this.playerQueue.length > 0) {
@@ -392,7 +398,7 @@ class PokerGame {
             this.sendTurns();
         }
 
-        if (this.folded >= this.players.length) {
+        if (this.folded >= this.players.length - 1) {
             if (this.gameState != 0) {
                 console.log("All players disconnected, restarting game");
                 this.gameState = 0;
@@ -608,6 +614,13 @@ class PokerPlayer {
         console.log(`unprepared to kick ${this.name}`);
     }
 
+}
+
+function jsonCard(rank, suit) {
+    return {
+        rank: rank,
+        suit: suit
+    };
 }
 
 const clients = new Map();
