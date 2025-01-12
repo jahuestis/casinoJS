@@ -125,8 +125,8 @@ function createActionButtons() {
     const buttons = [];
     buttons.push(createInput("25", "raise-input", ["action"]));
     buttons.push(createButton("raise", "raise", ["action"])); // action 0
-    buttons.push(createButton("all-in", "all-in", ["action"])); // action 1
-    buttons.push(createButton("call", "call", ["action"])); // action 2
+    buttons.push(createButton("call", "call", ["action"])); // action 1
+    buttons.push(createButton("all-in", "all-in", ["action"])); // action 2
     buttons.push(createButton("fold", "fold", ["action"])); // action 3
     buttons.push(createButton("check", "check", ["action"])); // action 4
     for (let i = 1; i < buttons.length; i++) {

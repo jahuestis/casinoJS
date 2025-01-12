@@ -347,10 +347,10 @@ class PokerGame {
                     actionSuccessful = this.raise(this.getPlayer(id), parseInt(raise));
                     break;
                 case 1:
-                    actionSuccessful = this.allIn(this.getPlayer(id));
+                    actionSuccessful = this.call(this.getPlayer(id));
                     break;
                 case 2:
-                    actionSuccessful = this.call(this.getPlayer(id));
+                    actionSuccessful = this.allIn(this.getPlayer(id));
                     break;
                 case 3:
                     actionSuccessful = this.fold(this.getPlayer(id));
