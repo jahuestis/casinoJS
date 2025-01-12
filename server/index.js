@@ -482,11 +482,19 @@ class PokerScorer {
         this.community = community;
         this.hand = hole.concat(community).sort();
 
-        this.this.lowRank = this.hole[0].rank
-        this.highRank = this.hole[1].rank
-        
-        
+        this.score = {
+            level:0,
+            primary: this.hole[1].rank,
+            kickers: [],
+            highCard: this.hole[1].rank,
+            lowCard: this.hole[0].rank
+        }        
+    }
 
+    updateScore(level, primary, kickers) {
+        this.score.level = level;
+        this.score.primary = primary;
+        this.score.kickers = kickers;
     }
 
     checkPair() {
@@ -508,11 +516,11 @@ class PokerScorer {
         })
 
         if (primary != 0) {
-            return jsonHandScore(1, primary, [0]);
+            this.updateScore(1, primary, [0]);
+            return true;
         } else {
-            return null;
+            return false;
         }
-
     }
 
     checkTwoPair() {
@@ -527,18 +535,19 @@ class PokerScorer {
         }
 
         let primary = 0
-        let secondary = 0
+        let kicker = 0
         counts.forEach((count, rank) => {
             if (count == 2) {
-                secondary = primary;
+                kicker = primary;
                 primary = rank;
             }
         })
 
-        if (primary != 0 && secondary != 0) {
-            return jsonHandScore(2, primary, [secondary]);
+        if (primary != 0 && kicker != 0) {
+            this.updateScore(2, primary, [kicker]);
+            return true;
         } else {
-            return null;
+            return false;
         }
     }
 
@@ -561,9 +570,10 @@ class PokerScorer {
         })
 
         if (primary != 0) {
-            return jsonHandScore(3, primary, [0]);
+            this.updateScore(3, primary, [0]);
+            return true;
         } else {
-            return null;
+            return false;
         }
     }
 
@@ -588,9 +598,10 @@ class PokerScorer {
         }
 
         if (primary != 0) {
-            return jsonHandScore(4, primary, [0]);
+            this.updateScore(4, primary, [0]);
+            return true;
         } else {
-            return null;
+            return false;
         }
     }
 
@@ -607,23 +618,77 @@ class PokerScorer {
         for (const suit in suits) {
             if (suits[suit].length >= 5) {
                 const flushRanks = suits[suit].sort((a, b) => b - a); // Sort high to low
-                return jsonHandScore(5, flushRanks[0], flushRanks.slice(1));
+                this.updateScore(5, flushRanks[0], flushRanks.slice(1));
+                return true;
             }
         }
     
-        return null; // No flush found
+        return false; // No flush found
+    }
+
+    checkFullHouse() {
+        const counts = new Map();
+        for (let i = 0; i < this.hand.length; i++) {
+            const rank = this.hand[i].rank;
+            if (counts.has(rank)) {
+                counts.set(rank, counts.get(rank) + 1);
+            } else {
+                counts.set(rank, 1);
+            }
+        }
+
+        let primary = 0
+        let kicker = 0
+        counts.forEach((count, rank) => {
+            if (count == 3) {
+                if (primary > kicker) {
+                    kicker = primary;
+                }
+                primary = rank;
+            } else if (count == 2) {
+                if (rank > kicker) {
+                    kicker = rank;
+                }
+            }
+        })
+
+        if (primary != 0 && kicker != 0) {
+            this.updateScore(6, primary, [kicker]);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    checkFourOfAKind() {
+        const counts = new Map();
+        for (let i = 0; i < this.hand.length; i++) {
+            const rank = this.hand[i].rank;
+            if (counts.has(rank)) {
+                counts.set(rank, counts.get(rank) + 1);
+            } else {
+                counts.set(rank, 1);
+            }
+        }
+
+        let primary = 0
+        counts.forEach((count, rank) => {
+            if (count == 4) {
+                primary = rank;
+            }
+        })
+
+        if (primary != 0) {
+            this.updateScore(7, primary, [0]);
+            return true;
+        } else {
+            return false;
+        }
     }
 
     
 }
 
-function jsonHandScore(level, primary, kickers) {
-    return {
-        level: level,
-        primary: primary,
-        kickers: kickers
-    }
-}
 
 class PokerPlayer {
     constructor(id, ws, name, chips = 500) {
