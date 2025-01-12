@@ -195,28 +195,54 @@ class PokerGame {
             }
         }
         candidates.splice(splice);
-
-        if (candidates.length == 1) {
-            return candidates;
-        }
-             
-        // Attempt to get winner by primary
-        candidates.sort((a, b) => b.scorer.score.primary - a.scorer.score.primary);   
-
-        splice = candidates.length;
-        for (let i = 1; i < candidates.length; i++) {
-            if (candidates[0].scorer.score.primary != candidates[i].scorer.score.primary) {
-                splice = i;
-                break;
-            }
-        }
-        candidates.splice(splice);
-
         if (candidates.length == 1) {
             return candidates;
         }
 
         // Attempt to get winner by kickers
+        candidates.sort((a, b) => b.scorer.score.kickers[0] - a.scorer.score.kickers[0]);
+
+        splice = candidates.length;
+        for (let i = 1; i < candidates.length; i++) {
+            for (let j = 0; j < candidates[0].kickers.length; j++) {
+                if (candidates[0].scorer.score.kickers[j] != candidates[i].scorer.score.kickers[j]) {
+                    splice = i;
+                    break;
+                }
+            }
+        }
+        candidates.splice(splice);
+        if (candidates.length == 1) {
+            return candidates;
+        }
+
+        // Attempt to get winner by high card
+        candidates.sort((a, b) => b.scorer.score.high - a.scorer.score.high);
+
+        splice = candidates.length;
+        for (let i = 1; i < candidates.length; i++) {
+            if (candidates[0].scorer.score.high != candidates[i].scorer.score.high) {
+                splice = i;
+                break;
+            }
+        }
+        candidates.splice(splice);
+        if (candidates.length == 1) {
+            return candidates;
+        }
+
+        // Attempt to get winner by low card
+        candidates.sort((a, b) => b.scorer.score.low - a.scorer.score.low);
+
+        splice = candidates.length;
+        for (let i = 1; i < candidates.length; i++) {
+            if (candidates[0].scorer.score.low != candidates[i].scorer.score.low) {
+                splice = i;
+                break;
+            }
+        }
+        candidates.splice(splice);
+        return candidates;
 
     }
 
@@ -532,16 +558,15 @@ class PokerScorer {
         this.scoreHand();     
     }
 
-    updateScore(level, primary, kickers) {
+    updateScore(level, kickers = []) {
         this.score.level = level;
-        this.score.primary = primary;
         this.score.kickers = kickers;
         this.score.high = this.hole[1].rank;
         this.score.low = this.hole[0].rank;
     }
 
     checkHighCard() {
-        this.updateScore(0, 0, 0);
+        this.updateScore(0);
         return true;
     }
 
@@ -564,7 +589,7 @@ class PokerScorer {
         })
 
         if (primary != 0) {
-            this.updateScore(1, primary, [0]);
+            this.updateScore(1, [primary]);
             return true;
         } else {
             return false;
@@ -583,16 +608,16 @@ class PokerScorer {
         }
 
         let primary = 0
-        let kicker = 0
+        let secondary = 0
         counts.forEach((count, rank) => {
             if (count == 2) {
-                kicker = primary;
+                secondary = primary;
                 primary = rank;
             }
         })
 
-        if (primary != 0 && kicker != 0) {
-            this.updateScore(2, primary, [kicker]);
+        if (primary != 0 && secondary != 0) {
+            this.updateScore(2, [primary, secondary]);
             return true;
         } else {
             return false;
@@ -618,7 +643,7 @@ class PokerScorer {
         })
 
         if (primary != 0) {
-            this.updateScore(3, primary, [0]);
+            this.updateScore(3, [primary]);
             return true;
         } else {
             return false;
@@ -646,7 +671,7 @@ class PokerScorer {
         }
 
         if (primary != 0) {
-            this.updateScore(4, primary, [0]);
+            this.updateScore(4, [primary]);
             return true;
         } else {
             return false;
@@ -656,21 +681,18 @@ class PokerScorer {
     checkFlush() {
         const suits = { H: [], S: [], C: [], D: [] };
     
-        // Group ranks by suits
-        for (let i = 0; i < this.hand.length; i++) {
+        // Group ranks by suits and check for flush
+        for (let i = this.hand.length - 1; i >= 0; i--) {
             const card = this.hand[i];
-            suits[card.suit].push(card.rank);
-        }
-    
-        // Check each suit for a flush
-        for (const suit in suits) {
-            if (suits[suit].length >= 5) {
-                const flushRanks = suits[suit].sort((a, b) => b - a); // Sort high to low
-                this.updateScore(5, 0, flushRanks.slice(0, 5));
+            const suit = card.suit;
+            suits[suit].push(card.rank);
+            if (suits[suit].length == 5) {
+                const flushRanks = suits[suit];
+                this.updateScore(5, flushRanks);
                 return true;
             }
         }
-    
+
         return false; // No flush found
     }
 
@@ -686,22 +708,22 @@ class PokerScorer {
         }
 
         let primary = 0
-        let kicker = 0
+        let secondary = 0
         counts.forEach((count, rank) => {
             if (count == 3) {
-                if (primary > kicker) {
-                    kicker = primary;
+                if (primary > secondary) {
+                    secondary = primary;
                 }
                 primary = rank;
             } else if (count == 2) {
-                if (rank > kicker) {
-                    kicker = rank;
+                if (rank > secondary) {
+                    secondary = rank;
                 }
             }
         })
 
-        if (primary != 0 && kicker != 0) {
-            this.updateScore(6, primary, [kicker]);
+        if (primary != 0 && secondary != 0) {
+            this.updateScore(6, [primary, secondary]);
             return true;
         } else {
             return false;
@@ -727,7 +749,7 @@ class PokerScorer {
         })
 
         if (primary != 0) {
-            this.updateScore(7, primary, [0]);
+            this.updateScore(7, [primary]);
             return true;
         } else {
             return false;
@@ -736,7 +758,7 @@ class PokerScorer {
 
     checkStraightFlush() {
         if (this.checkFlush() && this.checkStraight()) {
-            this.updateScore(8, this.hand[0].rank, [0]);
+            this.updateScore(8, score.kickers);
             return true;
         } else {
             return false;
@@ -745,7 +767,7 @@ class PokerScorer {
 
     checkRoyalFlush() {
         if (this.checkStraightFlush() && this.score.primary == 14) {
-            this.updateScore(9, 0, [0]);
+            this.updateScore(9);
             return true;
         } else {
             return false;
