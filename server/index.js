@@ -173,6 +173,53 @@ class PokerGame {
 
     }
 
+    findWinner() {
+        let candidates = [];
+        this.players.forEach(player => {
+            if (!player.folded) {
+                candidates.push({
+                    player: player,
+                    scorer: new PokerScorer(player.hole, this.community)
+                });
+            }
+        });
+
+        // Attempt to get winner by level
+        candidates.sort((a, b) => b.scorer.score.level - a.scorer.score.level);
+
+        let splice = candidates.length;
+        for (let i = 1; i < candidates.length; i++) {
+            if (candidates[0].scorer.score.level != candidates[i].scorer.score.level) {
+                splice = i;
+                break;
+            }
+        }
+        candidates.splice(splice);
+
+        if (candidates.length == 1) {
+            return candidates;
+        }
+             
+        // Attempt to get winner by primary
+        candidates.sort((a, b) => b.scorer.score.primary - a.scorer.score.primary);   
+
+        splice = candidates.length;
+        for (let i = 1; i < candidates.length; i++) {
+            if (candidates[0].scorer.score.primary != candidates[i].scorer.score.primary) {
+                splice = i;
+                break;
+            }
+        }
+        candidates.splice(splice);
+
+        if (candidates.length == 1) {
+            return candidates;
+        }
+
+        // Attempt to get winner by kickers
+
+    }
+
     reveal(range) {
         console.log(`revealed ${range} community cards`);
         this.broadcastToPlayers(jsonCommunity(this.community.slice(0, range)));
@@ -619,7 +666,7 @@ class PokerScorer {
         for (const suit in suits) {
             if (suits[suit].length >= 5) {
                 const flushRanks = suits[suit].sort((a, b) => b - a); // Sort high to low
-                this.updateScore(5, flushRanks[0], flushRanks.slice(1));
+                this.updateScore(5, 0, flushRanks.slice(0, 5));
                 return true;
             }
         }
@@ -698,7 +745,7 @@ class PokerScorer {
 
     checkRoyalFlush() {
         if (this.checkStraightFlush() && this.score.primary == 14) {
-            this.updateScore(9, 14, [0]);
+            this.updateScore(9, 0, [0]);
             return true;
         } else {
             return false;
