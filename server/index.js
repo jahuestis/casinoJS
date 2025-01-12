@@ -89,7 +89,7 @@ class PokerGame {
     startHand() {
         if (this.gameState == 0 && this.players.length > 1) {
             this.pot = 0;
-            this.turnIndex = 2 % this.players.length;
+            this.turnIndex = 1;
             this.lastRaiseID = this.players[this.turnIndex].id;
             this.round = 0;
             this.gameState = 1;
@@ -114,7 +114,7 @@ class PokerGame {
             this.broadcastToPlayers(jsonMessage("handStart", 0));
             this.restoreDeck();
             this.deal();
-            this.sendTurns();
+            this.nextTurn();
         }
         
     }
