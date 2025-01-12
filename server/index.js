@@ -6,6 +6,8 @@ const socket = new WebSocketServer({
 });
 let testPlayerCounter = 0;
 
+const suits = ["H", "S", "C", "D"];
+
 class PokerGame {
     constructor() {
         this.maxPlayers = 8;
@@ -35,8 +37,11 @@ class PokerGame {
 
     restoreDeck() {
         this.deck = [];
-        for (let i = 0; i < 52; i++) {
-            this.deck.push(i);
+
+        for (let i = 2; i <= 14; i++) {
+            for (let j = 0; j < 4; j++) {
+                this.deck.push(new jsonCard(i, suits[j]));
+            }
         }
     }
 
@@ -369,6 +374,7 @@ class PokerGame {
     }
 
     update() {
+        //console.log("update");
         if (this.gameState == 0) {
             // Move players to purgatory for queue confirmation if space available in game
             while (this.players.length < this.maxPlayers && this.playerQueue.length > 0) {
@@ -392,7 +398,7 @@ class PokerGame {
             this.sendTurns();
         }
 
-        if (this.folded >= this.players.length) {
+        if (this.folded >= this.players.length - 1) {
             if (this.gameState != 0) {
                 console.log("All players disconnected, restarting game");
                 this.gameState = 0;
@@ -472,255 +478,258 @@ class PokerGame {
 
 class PokerScorer {
     constructor(hole, community) {
-        this.hole = hole;
+        this.hole = [...hole].sort();
         this.community = community;
-        this.hand = hole.concat(community);
-        this.score = 0;
+        this.hand = hole.concat(community).sort();
+        this.score;
+        this.scoreHand();     
     }
 
-    getRank(card) {
-        if (card == 0) return 2;
-        return Math.ceil(card / 4) + 1;
+    updateScore(level, primary, kickers) {
+        this.score.level = level;
+        this.score.primary = primary;
+        this.score.kickers = kickers;
+        this.score.high = this.hole[1].rank;
+        this.score.low = this.hole[0].rank;
     }
 
-    getSuit(card) {
-        return card % 4;
+    checkHighCard() {
+        this.updateScore(0, 0, 0);
+        return true;
     }
 
-    scoreLowCard() { // max score: 1
-        let score = this.getRank(Math.min(...this.hand)) / 14;
-        console.log(`low card scored ${score}`);
-        return score;
-    }
-
-    scoreHighCard() { // max score: 2
-        let score = 1 + this.getRank(Math.max(...this.hand)) / 14;
-        console.log(`high card scored ${score}`);
-        return score;
-
-    }
-
-    scorePair() { // max score: 4
-        let counts = new Map();
-        this.hand.forEach(card => {
-            const rank = this.getRank(card);
+    checkPair() {
+        const counts = new Map();
+        for (let i = 0; i < this.hand.length; i++) {
+            const rank = this.hand[i].rank;
             if (counts.has(rank)) {
                 counts.set(rank, counts.get(rank) + 1);
             } else {
                 counts.set(rank, 1);
-            }
-        });
-
-        let score = 0;
-        counts.forEach((count, rank) => {
-            if (count >= 2) {
-                let value = 15 + (rank / 14);
-                if (value > score) {
-                    score = value;
-                }
-            }
-        })
-
-        console.log(`pair scored ${score}`);
-        return score;
-    }
-
-    scoreTwoPair() { // max score: 8
-        let counts = new Map();
-        this.hand.forEach(card => {
-            const rank = this.getRank(card);
-            if (counts.has(rank)) {
-                counts.set(rank, counts.get(rank) + 1);
-            } else {
-                counts.set(rank, 1);
-            }
-        });
-
-        let pair1 = 0;
-        let pair2 = 0;
-        counts.forEach((count, rank) => {
-            if (count >= 2) {
-                let value = 7 + (rank / 14);
-                if (value >= pair2) {
-                    pair2 = value;
-                    pair1 = pair2;
-                } else if (value > pair1) {
-                    pair1 = value;
-                }
-            }
-        })
-
-        let score = (pair1 > 0 && pair2 > 0) ? (pair1 + pair2) / 2 : 0
-        console.log(`two pair scored ${score}`);
-        return score;
-    }
-
-    scoreThreeOfAKind() { // max score: 16
-        let counts = new Map();
-        this.hand.forEach(card => {
-            const rank = this.getRank(card);
-            if (counts.has(rank)) {
-                counts.set(rank, counts.get(rank) + 1);
-            } else {
-                counts.set(rank, 1);
-            }
-        });
-
-        let score = 0;
-        counts.forEach((count, rank) => {
-            if (count >= 3) {
-                let value = 15 + (rank / 14);
-                if (value > score) {
-                    score = value;
-                }
-            }
-        })
-
-        console.log(`three-of-a-kind scored ${score}`);
-        return score;
-    }
-
-    scoreStraight() { // max score: 32
-        let score = 0;
-
-        // get ranks and ignore duplicates
-        let ranks = [];
-        for (let i = 0; i < 7; i++) {
-            const rank = this.getRank(this.hand[i]);
-            if (!ranks.includes(rank)) {
-                ranks.push(rank);
             }
         }
-        ranks.sort();
 
-        // check for straights
-        for (let i = 0; i < ranks.length - 4; i++) {
-            let value = 0;
-            for (let j = 0; j < 5; j++) {
-                if (j > 0 && ranks[i + j] != ranks[ i + j - 1] + 1) {
+        let primary = 0
+        counts.forEach((count, rank) => {
+            if (count == 2) {
+                primary = rank;
+            }
+        })
+
+        if (primary != 0) {
+            this.updateScore(1, primary, [0]);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    checkTwoPair() {
+        const counts = new Map();
+        for (let i = 0; i < this.hand.length; i++) {
+            const rank = this.hand[i].rank;
+            if (counts.has(rank)) {
+                counts.set(rank, counts.get(rank) + 1);
+            } else {
+                counts.set(rank, 1);
+            }
+        }
+
+        let primary = 0
+        let kicker = 0
+        counts.forEach((count, rank) => {
+            if (count == 2) {
+                kicker = primary;
+                primary = rank;
+            }
+        })
+
+        if (primary != 0 && kicker != 0) {
+            this.updateScore(2, primary, [kicker]);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    checkThreeOfAKind() {
+        const counts = new Map();
+        for (let i = 0; i < this.hand.length; i++) {
+            const rank = this.hand[i].rank;
+            if (counts.has(rank)) {
+                counts.set(rank, counts.get(rank) + 1);
+            } else {
+                counts.set(rank, 1);
+            }
+        }
+
+        let primary = 0
+        counts.forEach((count, rank) => {
+            if (count == 3) {
+                primary = rank;
+            }
+        })
+
+        if (primary != 0) {
+            this.updateScore(3, primary, [0]);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    checkStraight() {
+        let uniqueRanks = [this.hand[0].rank];
+        for (let i = 1; i < this.hand.length; i++) {
+            const rank = this.hand[i].rank;
+            if (rank > uniqueRanks[uniqueRanks.length - 1]) {
+                uniqueRanks.push(rank);
+            }
+        }
+
+        primary = 0;
+        for (let i = 0; i < uniqueRanks.length - 4; i++) {
+            for (let j = 1; j < 5; j++) {
+                if (uniqueRanks[i] + j != uniqueRanks[i + j]) {
                     break;
-                } else {
-                    if (j == 4) {
-                        value = 31 + (ranks[j] / 14);
-                    }
+                } else if (j == 4) {
+                    primary = uniqueRanks[i + j]
                 }
-            }
-            if (value > score) {
-                score = value;
             }
         }
 
-        console.log(`straight scored ${score}`);
-        return score;
+        if (primary != 0) {
+            this.updateScore(4, primary, [0]);
+            return true;
+        } else {
+            return false;
+        }
     }
 
-    scoreFlush() { // max score: 64
-        let hearts = []
-        let spades = []
-        let clubs = []
-        let diamonds = []
-
-        let score = 0;
-        let flush = -1;
-        if (hearts.length >= 5) flush = 0;
-        else if (spades.length >= 5) 1;
-        else if (clubs.length >= 5) flush = 2;
-        else if (diamonds.length >= 5) flush = 3;
-
-        let fromHole = []
-        if (flush >= 0) {
-            this.hole.forEach(card => {
-                if (this.getSuit(card) == flush) {
-                    fromHole.push(card);
-                }
-            })
-            
-            if (fromHole.length > 0) {
-                score = 63 + (this.getRank(Math.max(...fromHole)) / 14);
-            } else {
-                score = 63.01;
+    checkFlush() {
+        const suits = { H: [], S: [], C: [], D: [] };
+    
+        // Group ranks by suits
+        for (let i = 0; i < this.hand.length; i++) {
+            const card = this.hand[i];
+            suits[card.suit].push(card.rank);
+        }
+    
+        // Check each suit for a flush
+        for (const suit in suits) {
+            if (suits[suit].length >= 5) {
+                const flushRanks = suits[suit].sort((a, b) => b - a); // Sort high to low
+                this.updateScore(5, flushRanks[0], flushRanks.slice(1));
+                return true;
             }
         }
-
-        console.log(`flush scored ${score}`);
-        return score;
-
+    
+        return false; // No flush found
     }
 
-    scoreFullHouse() { // max score: 128
-        let counts = new Map();
-        this.hand.forEach(card => {
-            const rank = this.getRank(card);
+    checkFullHouse() {
+        const counts = new Map();
+        for (let i = 0; i < this.hand.length; i++) {
+            const rank = this.hand[i].rank;
             if (counts.has(rank)) {
                 counts.set(rank, counts.get(rank) + 1);
             } else {
                 counts.set(rank, 1);
             }
-        });
-
-        let score = 0;
-
-        let tripleRank = 0;
-        counts.forEach((count, rank) => {
-            if (count >= 3) {
-                if (rank > tripleRank) {
-                    tripleRank = rank;
-                }
-            }
-        })
-
-        let pairRank = 0;
-        counts.forEach((count, rank) => {
-            if (count >= 2 && rank != tripleRank) {
-                if (rank > pairRank) {
-                    pairRank = rank;
-                }
-            }
-        })
-
-        if (pairRank > 0 && tripleRank > 0) {
-            score = 127 + (tripleRank / 14) * .5 + (pairRank / 14) * .25;
         }
 
-        console.log(`full house scored ${score}`);
-        return score;
+        let primary = 0
+        let kicker = 0
+        counts.forEach((count, rank) => {
+            if (count == 3) {
+                if (primary > kicker) {
+                    kicker = primary;
+                }
+                primary = rank;
+            } else if (count == 2) {
+                if (rank > kicker) {
+                    kicker = rank;
+                }
+            }
+        })
+
+        if (primary != 0 && kicker != 0) {
+            this.updateScore(6, primary, [kicker]);
+            return true;
+        } else {
+            return false;
+        }
     }
 
-    scoreFourOfAKind() { // max score: 256
-        let counts = new Map();
-        this.hand.forEach(card => {
-            const rank = this.getRank(card);
+    checkFourOfAKind() {
+        const counts = new Map();
+        for (let i = 0; i < this.hand.length; i++) {
+            const rank = this.hand[i].rank;
             if (counts.has(rank)) {
                 counts.set(rank, counts.get(rank) + 1);
             } else {
                 counts.set(rank, 1);
             }
-        });
+        }
 
-        let score = 0;
+        let primary = 0
         counts.forEach((count, rank) => {
-            if (count >= 4) {
-                let value = 255 + (rank / 14);
-                if (value > score) {
-                    score = value;
-                }
+            if (count == 4) {
+                primary = rank;
             }
         })
 
-        console.log(`four-of-a-kind scored ${score}`);
-        return score;
+        if (primary != 0) {
+            this.updateScore(7, primary, [0]);
+            return true;
+        } else {
+            return false;
+        }
     }
 
-    scoreStraightFlush() { // max score: 512
-
-
+    checkStraightFlush() {
+        if (this.checkFlush() && this.checkStraight()) {
+            this.updateScore(8, this.hand[0].rank, [0]);
+            return true;
+        } else {
+            return false;
+        }
     }
 
-    scoreRoyalFlush() { // max score: 1024
-
-
+    checkRoyalFlush() {
+        if (this.checkStraightFlush() && this.score.primary == 14) {
+            this.updateScore(9, 14, [0]);
+            return true;
+        } else {
+            return false;
+        }
     }
+
+    scoreHand() {
+        const scoringOrder = [
+            () => this.checkRoyalFlush(),
+            () => this.checkStraightFlush(),
+            () => this.checkFourOfAKind(),
+            () => this.checkFullHouse(),
+            () => this.checkFlush(),
+            () => this.checkStraight(),
+            () => this.checkThreeOfAKind(),
+            () => this.checkTwoPair(),
+            () => this.checkPair(),
+            () => this.checkHighCard()
+        ]
+
+        for (let i = 0; i < scoringOrder.length; i++) {
+            if (scoringOrder[i]()) {
+                break;
+            }
+        }
+        
+    }    
+
+    
 }
+
 
 class PokerPlayer {
     constructor(id, ws, name, chips = 500) {
@@ -816,6 +825,13 @@ class PokerPlayer {
         console.log(`unprepared to kick ${this.name}`);
     }
 
+}
+
+function jsonCard(rank, suit) {
+    return {
+        rank: rank,
+        suit: suit
+    };
 }
 
 const clients = new Map();
