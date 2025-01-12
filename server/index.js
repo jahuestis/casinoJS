@@ -481,20 +481,21 @@ class PokerScorer {
         this.hole = [...hole].sort();
         this.community = community;
         this.hand = hole.concat(community).sort();
-
-        this.score = {
-            level:0,
-            primary: this.hole[1].rank,
-            kickers: [],
-            highCard: this.hole[1].rank,
-            lowCard: this.hole[0].rank
-        }        
+        this.score;
+        this.scoreHand();     
     }
 
     updateScore(level, primary, kickers) {
         this.score.level = level;
         this.score.primary = primary;
         this.score.kickers = kickers;
+        this.score.high = this.hole[1].rank;
+        this.score.low = this.hole[0].rank;
+    }
+
+    checkHighCard() {
+        this.updateScore(0, 0, 0);
+        return true;
     }
 
     checkPair() {
@@ -685,6 +686,46 @@ class PokerScorer {
             return false;
         }
     }
+
+    checkStraightFlush() {
+        if (this.checkFlush() && this.checkStraight()) {
+            this.updateScore(8, this.hand[0].rank, [0]);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    checkRoyalFlush() {
+        if (this.checkStraightFlush() && this.score.primary == 14) {
+            this.updateScore(9, 14, [0]);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    scoreHand() {
+        const scoringOrder = [
+            () => this.checkRoyalFlush(),
+            () => this.checkStraightFlush(),
+            () => this.checkFourOfAKind(),
+            () => this.checkFullHouse(),
+            () => this.checkFlush(),
+            () => this.checkStraight(),
+            () => this.checkThreeOfAKind(),
+            () => this.checkTwoPair(),
+            () => this.checkPair(),
+            () => this.checkHighCard()
+        ]
+
+        for (let i = 0; i < scoringOrder.length; i++) {
+            if (scoringOrder[i]()) {
+                break;
+            }
+        }
+        
+    }    
 
     
 }
