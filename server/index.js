@@ -594,6 +594,26 @@ class PokerScorer {
         }
     }
 
+    checkFlush() {
+        const suits = { H: [], S: [], C: [], D: [] };
+    
+        // Group ranks by suits
+        for (let i = 0; i < this.hand.length; i++) {
+            const card = this.hand[i];
+            suits[card.suit].push(card.rank);
+        }
+    
+        // Check each suit for a flush
+        for (const suit in suits) {
+            if (suits[suit].length >= 5) {
+                const flushRanks = suits[suit].sort((a, b) => b - a); // Sort high to low
+                return jsonHandScore(5, flushRanks[0], flushRanks.slice(1));
+            }
+        }
+    
+        return null; // No flush found
+    }
+
     
 }
 
