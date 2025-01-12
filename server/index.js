@@ -374,7 +374,7 @@ class PokerGame {
     }
 
     update() {
-        console.log("update");
+        //console.log("update");
         if (this.gameState == 0) {
             // Move players to purgatory for queue confirmation if space available in game
             while (this.players.length < this.maxPlayers && this.playerQueue.length > 0) {
@@ -478,46 +478,131 @@ class PokerGame {
 
 class PokerScorer {
     constructor(hole, community) {
-        this.hole = hole;
+        this.hole = [...hole].sort();
         this.community = community;
-        this.hand = hole.concat(community);
+        this.hand = hole.concat(community).sort();
 
-        this.lowCard = null;
-        this.highCard = null;
-        this.pair = null;
-        this.twoPair = null;
-        this.threeOfAKind = null;
-        this.straight = null;
-        this.flush = null;
-        this.fullHouse = null;
-        this.fourOfAKind = null;
-        this.straightFlush = null;
-        this.royalFlush = null;
+        this.this.lowRank = this.hole[0].rank
+        this.highRank = this.hole[1].rank
+        
+        
 
     }
 
-    getRank(card) {
-        if (card == 0) return 2;
-        return Math.ceil(card / 4) + 1;
+    checkPair() {
+        const counts = new Map();
+        for (let i = 0; i < this.hand.length; i++) {
+            const rank = this.hand[i].rank;
+            if (counts.has(rank)) {
+                counts.set(rank, counts.get(rank) + 1);
+            } else {
+                counts.set(rank, 1);
+            }
+        }
+
+        let primary = 0
+        counts.forEach((count, rank) => {
+            if (count == 2) {
+                primary = rank;
+            }
+        })
+
+        if (primary != 0) {
+            return jsonHandScore(1, primary, [0]);
+        } else {
+            return null;
+        }
+
     }
 
-    getSuit(card) {
-        return card % 4;
+    checkTwoPair() {
+        const counts = new Map();
+        for (let i = 0; i < this.hand.length; i++) {
+            const rank = this.hand[i].rank;
+            if (counts.has(rank)) {
+                counts.set(rank, counts.get(rank) + 1);
+            } else {
+                counts.set(rank, 1);
+            }
+        }
+
+        let primary = 0
+        let secondary = 0
+        counts.forEach((count, rank) => {
+            if (count == 2) {
+                secondary = primary;
+                primary = rank;
+            }
+        })
+
+        if (primary != 0 && secondary != 0) {
+            return jsonHandScore(2, primary, [secondary]);
+        } else {
+            return null;
+        }
     }
 
-    compareRank(card1, card2, offset1 = 0, offset2 = 0) {
-        const rank1 = this.getRank(card1) + offset1;
-        const rank2 = this.getRank(card2) + offset2;
-        return rank1 == rank2;
+    checkThreeOfAKind() {
+        const counts = new Map();
+        for (let i = 0; i < this.hand.length; i++) {
+            const rank = this.hand[i].rank;
+            if (counts.has(rank)) {
+                counts.set(rank, counts.get(rank) + 1);
+            } else {
+                counts.set(rank, 1);
+            }
+        }
+
+        let primary = 0
+        counts.forEach((count, rank) => {
+            if (count == 3) {
+                primary = rank;
+            }
+        })
+
+        if (primary != 0) {
+            return jsonHandScore(3, primary, [0]);
+        } else {
+            return null;
+        }
     }
 
-    compareSuit(card1, card2) {
-        const suit1 = this.getSuit(card1);
-        const suit2 = this.getSuit(card2);
-        return suit1 == suit2;
+    checkStraight() {
+        let uniqueRanks = [this.hand[0].rank];
+        for (let i = 1; i < this.hand.length; i++) {
+            const rank = this.hand[i].rank;
+            if (rank > uniqueRanks[uniqueRanks.length - 1]) {
+                uniqueRanks.push(rank);
+            }
+        }
+
+        primary = 0;
+        for (let i = 0; i < uniqueRanks.length - 4; i++) {
+            for (let j = 1; j < 5; j++) {
+                if (uniqueRanks[i] + j != uniqueRanks[i + j]) {
+                    break;
+                } else if (j == 4) {
+                    primary = uniqueRanks[i + j]
+                }
+            }
+        }
+
+        if (primary != 0) {
+            return jsonHandScore(4, primary, [0]);
+        } else {
+            return null;
+        }
     }
 
     
+}
+
+function jsonHandScore(level, primary, kickers) {
+    return {
+        level: level,
+        primary: primary,
+        kickers: kickers
+    }
 }
 
 class PokerPlayer {
