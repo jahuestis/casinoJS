@@ -217,12 +217,17 @@ class PokerGame {
         candidates.sort((a, b) => b.scorer.score.kickers[0] - a.scorer.score.kickers[0]);
 
         splice = candidates.length;
+        let spliceFound = false;
         for (let i = 1; i < candidates.length; i++) {
             for (let j = 0; j < candidates[0].scorer.score.kickers.length; j++) {
                 if (candidates[0].scorer.score.kickers[j] != candidates[i].scorer.score.kickers[j]) {
                     splice = i;
+                    spliceFound = true;
                     break;
                 }
+            }
+            if (spliceFound) {
+                break;
             }
         }
         candidates.splice(splice);
@@ -570,7 +575,7 @@ class PokerScorer {
         this.hole = hole;
         this.community = community;
         this.hand = hole.concat(community).sort((a, b) => a.rank - b.rank);
-        console.log(this.hand);
+        //console.log(this.hand);
         this.score;
         this.scoreHand();     
     }
