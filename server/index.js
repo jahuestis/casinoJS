@@ -155,6 +155,12 @@ class PokerGame {
                 break;
             case 4:
                 console.log("Hand over");
+                const winners = this.findWinners();
+                console.log(`winners:`);
+                winners.forEach(winner => {
+                    console.log(winner.player.name), winner.scorer.score;
+                    winner.player.addChips(this.pot / winners.length);
+                })
                 break
             default:
                 console.error("Invalid turn value:", this.turn);
@@ -174,7 +180,7 @@ class PokerGame {
 
     }
 
-    findWinner() {
+    findWinners() {
         let candidates = [];
         this.players.forEach(player => {
             if (!player.folded) {
@@ -185,7 +191,13 @@ class PokerGame {
             }
         });
 
+        candidates.forEach(candidate => {
+            console.log(candidate.player.name);
+            console.log(candidate.scorer.score);
+        })
+
         // Attempt to get winner by level
+        console.log('Scoring by level');
         candidates.sort((a, b) => b.scorer.score.level - a.scorer.score.level);
 
         let splice = candidates.length;
@@ -201,11 +213,12 @@ class PokerGame {
         }
 
         // Attempt to get winner by kickers
+        console.log('Scoring by kickers');
         candidates.sort((a, b) => b.scorer.score.kickers[0] - a.scorer.score.kickers[0]);
 
         splice = candidates.length;
         for (let i = 1; i < candidates.length; i++) {
-            for (let j = 0; j < candidates[0].kickers.length; j++) {
+            for (let j = 0; j < candidates[0].scorer.score.kickers.length; j++) {
                 if (candidates[0].scorer.score.kickers[j] != candidates[i].scorer.score.kickers[j]) {
                     splice = i;
                     break;
@@ -218,6 +231,7 @@ class PokerGame {
         }
 
         // Attempt to get winner by high card
+        console.log('Scoring by high card');
         candidates.sort((a, b) => b.scorer.score.high - a.scorer.score.high);
 
         splice = candidates.length;
@@ -233,6 +247,7 @@ class PokerGame {
         }
 
         // Attempt to get winner by low card
+        console.log('Scoring by low card');
         candidates.sort((a, b) => b.scorer.score.low - a.scorer.score.low);
 
         splice = candidates.length;
@@ -552,7 +567,7 @@ class PokerGame {
 
 class PokerScorer {
     constructor(hole, community) {
-        this.hole = [...hole].sort();
+        this.hole = hole;
         this.community = community;
         this.hand = hole.concat(community).sort();
         this.score;
@@ -560,18 +575,22 @@ class PokerScorer {
     }
 
     updateScore(level, kickers = []) {
-        this.score.level = level;
-        this.score.kickers = kickers;
-        this.score.high = this.hole[1].rank;
-        this.score.low = this.hole[0].rank;
+        this.score = {
+            level: level,
+            kickers: kickers,
+            high: Math.max(...this.hole.map(card => card.rank)),
+            low: Math.min(...this.hole.map(card => card.rank))
+        }
     }
 
     checkHighCard() {
+        console.log("check high card");
         this.updateScore(0);
         return true;
     }
 
     checkPair() {
+        console.log("check pair");
         const counts = new Map();
         for (let i = 0; i < this.hand.length; i++) {
             const rank = this.hand[i].rank;
@@ -598,6 +617,7 @@ class PokerScorer {
     }
 
     checkTwoPair() {
+        console.log("check two pair");
         const counts = new Map();
         for (let i = 0; i < this.hand.length; i++) {
             const rank = this.hand[i].rank;
@@ -626,6 +646,7 @@ class PokerScorer {
     }
 
     checkThreeOfAKind() {
+        console.log("check three of a kind");
         const counts = new Map();
         for (let i = 0; i < this.hand.length; i++) {
             const rank = this.hand[i].rank;
@@ -651,7 +672,8 @@ class PokerScorer {
         }
     }
 
-    checkStraight() {
+    checkStraight(log = true) {
+        if (log) console.log("check straight");
         let uniqueRanks = [this.hand[0].rank];
         for (let i = 1; i < this.hand.length; i++) {
             const rank = this.hand[i].rank;
@@ -660,7 +682,7 @@ class PokerScorer {
             }
         }
 
-        primary = 0;
+        let primary = 0;
         for (let i = 0; i < uniqueRanks.length - 4; i++) {
             for (let j = 1; j < 5; j++) {
                 if (uniqueRanks[i] + j != uniqueRanks[i + j]) {
@@ -679,7 +701,8 @@ class PokerScorer {
         }
     }
 
-    checkFlush() {
+    checkFlush(log = true) {
+        if (log) console.log("check flush");
         const suits = { H: [], S: [], C: [], D: [] };
     
         // Group ranks by suits and check for flush
@@ -698,6 +721,7 @@ class PokerScorer {
     }
 
     checkFullHouse() {
+        console.log("check full house");
         const counts = new Map();
         for (let i = 0; i < this.hand.length; i++) {
             const rank = this.hand[i].rank;
@@ -732,6 +756,7 @@ class PokerScorer {
     }
 
     checkFourOfAKind() {
+        console.log("check four of a kind");
         const counts = new Map();
         for (let i = 0; i < this.hand.length; i++) {
             const rank = this.hand[i].rank;
@@ -757,8 +782,9 @@ class PokerScorer {
         }
     }
 
-    checkStraightFlush() {
-        if (this.checkFlush() && this.checkStraight()) {
+    checkStraightFlush(log = true) {
+        if (log) console.log("check straight flush");
+        if (this.checkFlush(false) && this.checkStraight(false)) {
             this.updateScore(8, score.kickers);
             return true;
         } else {
@@ -767,7 +793,8 @@ class PokerScorer {
     }
 
     checkRoyalFlush() {
-        if (this.checkStraightFlush() && this.score.primary == 14) {
+        console.log("check royal flush");
+        if (this.checkStraightFlush(false) && this.score.primary == 14) {
             this.updateScore(9);
             return true;
         } else {
