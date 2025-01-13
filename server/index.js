@@ -569,7 +569,8 @@ class PokerScorer {
     constructor(hole, community) {
         this.hole = hole;
         this.community = community;
-        this.hand = hole.concat(community).sort();
+        this.hand = hole.concat(community).sort((a, b) => a.rank - b.rank);
+        console.log(this.hand);
         this.score;
         this.scoreHand();     
     }
