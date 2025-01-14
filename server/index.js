@@ -174,6 +174,7 @@ class PokerGame {
     }
 
     endHand() {
+        this.reveal(5);
         this.gameState = 2;
         this.score();
 
@@ -194,27 +195,27 @@ class PokerGame {
         };
 
         const hands = {
-            0: "high card",
-            1: "pair",
-            2: "two pair",
-            3: "three of a kind",
-            4: "straight",
-            5: "flush",
-            6: "full house",
-            7: "four of a kind",
-            8: "straight flush",
-            9: "royal flush"
+            0: "HC",
+            1: "P",
+            2: "2P",
+            3: "3OAK",
+            4: "S",
+            5: "F",
+            6: "FH",
+            7: "4OAK",
+            8: "SF",
+            9: "RF"
         }
 
         this.players.forEach(player => {
             const hole1 = ranks[player.hole[0].rank] + player.hole[0].suit;
             const hole2 = ranks[player.hole[1].rank] + player.hole[1].suit;
             console.log(player.score);
-            let showHand = `${hole1} | ${hole2} | ${hands[player.score.level]}`;
+            let showHand = `${hole1} ${hole2} ${hands[player.score.level]}`;
             if (player.won) {
-                showHand += ` | w`;
+                showHand += ` (W)`;
             } else if (player.folded) {
-                showHand += ` | f`;
+                showHand += ` (F)`;
             }
 
             player.setLastAction(showHand);
