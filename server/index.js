@@ -211,7 +211,7 @@ class PokerGame {
         this.players.forEach(player => {
             const hole1 = ranks[player.hole[0].rank] + player.hole[0].suit;
             const hole2 = ranks[player.hole[1].rank] + player.hole[1].suit;
-            console.log(player.score);
+            //console.log(player.score);
             let showHand = `${hole1} ${hole2} ${hands[player.score.level]}`;
             if (player.won) {
                 showHand += ` (W)`;
