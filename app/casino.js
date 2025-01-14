@@ -202,6 +202,14 @@ function pokerQueueScreen() {
     gameArea.appendChild(queueStack);
 }
 
+function mainMenuScreen() {
+    while (gameArea.firstChild) {
+        gameArea.firstChild.remove();
+    }
+    mainMenu.appendChild(chipsCounter);
+    gameArea.appendChild(mainMenu);
+}
+
 function pokerReadyScreen() {
     while (gameArea.firstChild) {
         gameArea.firstChild.remove();
@@ -253,7 +261,7 @@ const gameInfo = createHeading("", 2, "game-info");
 const chipsButton = createButton("get chips");
 chipsButton.addEventListener("click", () => updateChips(25));
 const pokerButton = createButton("play poker");
-pokerButton.addEventListener("click", () => requestPoker(mainMenu));
+pokerButton.addEventListener("click", () => requestPoker());
 const blackjackButton = createButton("blackjack");
 const mainMenu = createDiv([title, createSpacer(), pokerButton, chipsButton, createSpacer(), chipsCounter], "main-menu");
 
@@ -415,6 +423,25 @@ socket.onmessage = (event) => {
         const messageElement = createHeading(data.message, 2, "chat-message");
         chat.appendChild(messageElement);
         chat.scrollTop = chat.scrollHeight;
+    } else if (messageType === "playAgain") {
+        const buttonDiv = document.getElementById("action-div");
+        while (buttonDiv.firstChild) {
+            buttonDiv.removeChild(buttonDiv.firstChild);
+        }
+        const mainMenuButton = createButton("main menu", "leave-button", ["end-game-button"]);
+        const playAgainButton = createButton("play again", "play-again-button", ["end-game-button"]);
+        mainMenuButton.addEventListener("click", () => {
+            mainMenuScreen();
+            socket.send(jsonLeavePoker());
+        });
+        playAgainButton.addEventListener("click", () => {
+            pokerQueueScreen();
+            pokerQueued = true;
+        })
+        buttonDiv.appendChild(mainMenuButton);
+        buttonDiv.appendChild(playAgainButton);
+        
+
     } else {
         console.log(`unknown message type: ${messageType}`);
     }
@@ -536,7 +563,7 @@ function loadingScreen(loadingDiv, loadingText) {
     loadingText.textContent = "Loading assets... " + assetsLoaded + "/" + totalAssets;
     if (assetsLoaded >= totalAssets) { // Start Game Loop
         loadingDiv.remove();
-        gameArea.append(mainMenu);
+        gameArea.appendChild(mainMenu);
     } else {
         requestAnimationFrame(() => {loadingScreen(loadingDiv, loadingText)});
     }

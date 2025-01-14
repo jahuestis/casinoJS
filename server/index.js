@@ -169,8 +169,9 @@ class PokerGame {
 
     restart() {
         console.log("Restarting");
+        this.broadcastToPlayers(jsonMessage("playAgain"));
         this.gameState = 0;
-        this.kickPlayers();        
+        this.kickPlayers();
     }
 
     endHand() {
@@ -553,6 +554,9 @@ class PokerGame {
             
         } else if (this.gameState == 1) {
             this.broadcastDetails();
+            if (this.players.length > 1) {
+                this.broadcastToPlayers(jsonMessage("roundReady", 0));
+            }
         }
 
         //console.log(`queue: ${this.playerQueue}`);
