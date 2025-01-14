@@ -248,7 +248,7 @@ function detailsString(details) {
 }
 
 const title = createHeading("casinoJS");
-const chipsCounter = createHeading("chips: 0", 2, "chips-counter");
+const chipsCounter = createHeading("", 2, "chips-counter");
 const gameInfo = createHeading("", 2, "game-info");
 const chipsButton = createButton("get chips");
 chipsButton.addEventListener("click", () => updateChips(25));
@@ -272,10 +272,10 @@ socket.onmessage = (event) => {
     } else if (messageType === "initializeClient") {
         displayName = data.name;
         chips = data.chips;
-        chipsCounter.textContent = "chips: " + chips;
+        chipsCounter.textContent = `${displayName}: ${chips} chips`;
     } else if (messageType === "chips") {
         chips = data.chips;
-        chipsCounter.textContent = "chips: " + chips;
+        chipsCounter.textContent = `${displayName}: ${chips} chips`;
     } else if (messageType === "invitePoker") {
         if (pokerQueued) {
             console.log("poker accepted")
@@ -304,6 +304,13 @@ socket.onmessage = (event) => {
         });
 
         gameInfo.textContent = `bet: ${data.bet} | min raise: ${data.minRaise} | pot: ${data.pot}`;
+
+        const raiseInput = document.getElementById("raise-input");
+        if (raiseInput) {
+            if (raiseInput.value < data.minRaise) {
+                raiseInput.value = data.minRaise;
+            }
+        }
 
         const namesPreviewElement = document.getElementById("preview-players");
         if (namesPreviewElement) {

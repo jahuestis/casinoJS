@@ -175,12 +175,52 @@ class PokerGame {
 
     endHand() {
         this.gameState = 2;
-        const winners = this.findWinners();
-        console.log(`winners:`);
-        winners.forEach(winner => {
-            console.log(winner.player.name);
-            winner.player.addChips(this.pot / winners.length);
-        });
+        this.score();
+
+        const ranks = {
+            2: "2",
+            3: "3",
+            4: "4",
+            5: "5",
+            6: "6",
+            7: "7",
+            8: "8",
+            9: "9",
+            10: "10",
+            11: "J",
+            12: "Q",
+            13: "K",
+            14: "A"
+        };
+
+        const hands = {
+            0: "high card",
+            1: "pair",
+            2: "two pair",
+            3: "three of a kind",
+            4: "straight",
+            5: "flush",
+            6: "full house",
+            7: "four of a kind",
+            8: "straight flush",
+            9: "royal flush"
+        }
+
+        this.players.forEach(player => {
+            const hole1 = ranks[player.hole[0].rank] + player.hole[0].suit;
+            const hole2 = ranks[player.hole[1].rank] + player.hole[1].suit;
+            console.log(player.score);
+            let showHand = `${hole1} | ${hole2} | ${hands[player.score.level]}`;
+            if (player.won) {
+                showHand += ` | w`;
+            } else if (player.folded) {
+                showHand += ` | f`;
+            }
+
+            player.setLastAction(showHand);
+        })
+
+        this.broadcastDetails();
 
         setTimeout(() => {
             this.restart()
@@ -188,47 +228,49 @@ class PokerGame {
 
     }
 
+    score() {
+        this.players.forEach(player => {
+            const scorer = new PokerScorer(player.hole, this.community);
+            player.setScore(scorer.score);
+        })
+
+        this.findWinners();
+    }
+
     findWinners() {
         let candidates = [];
         this.players.forEach(player => {
             if (!player.folded) {
-                candidates.push({
-                    player: player,
-                    scorer: new PokerScorer(player.hole, this.community)
-                });
+                candidates.push(player);
             }
-        });
-
-        candidates.forEach(candidate => {
-            console.log(candidate.player.name);
-            console.log(candidate.scorer.score);
         })
 
         // Attempt to get winner by level
         console.log('Scoring by level');
-        candidates.sort((a, b) => b.scorer.score.level - a.scorer.score.level);
+        candidates.sort((a, b) => b.score.level - a.score.level);
 
         let splice = candidates.length;
         for (let i = 1; i < candidates.length; i++) {
-            if (candidates[0].scorer.score.level != candidates[i].scorer.score.level) {
+            if (candidates[0].score.level != candidates[i].score.level) {
                 splice = i;
                 break;
             }
         }
         candidates.splice(splice);
         if (candidates.length == 1) {
-            return candidates;
+            candidates[0].win(this.pot);
+            return;
         }
 
         // Attempt to get winner by kickers
         console.log('Scoring by kickers');
-        candidates.sort((a, b) => b.scorer.score.kickers[0] - a.scorer.score.kickers[0]);
+        candidates.sort((a, b) => b.score.kickers[0] - a.score.kickers[0]);
 
         splice = candidates.length;
         let spliceFound = false;
         for (let i = 1; i < candidates.length; i++) {
-            for (let j = 0; j < candidates[0].scorer.score.kickers.length; j++) {
-                if (candidates[0].scorer.score.kickers[j] != candidates[i].scorer.score.kickers[j]) {
+            for (let j = 0; j < candidates[0].score.kickers.length; j++) {
+                if (candidates[0].score.kickers[j] != candidates[i].score.kickers[j]) {
                     splice = i;
                     spliceFound = true;
                     break;
@@ -240,38 +282,42 @@ class PokerGame {
         }
         candidates.splice(splice);
         if (candidates.length == 1) {
-            return candidates;
+            candidates[0].win(this.pot);
+            return;
         }
 
         // Attempt to get winner by high card
         console.log('Scoring by high card');
-        candidates.sort((a, b) => b.scorer.score.high - a.scorer.score.high);
+        candidates.sort((a, b) => b.score.high - a.score.high);
 
         splice = candidates.length;
         for (let i = 1; i < candidates.length; i++) {
-            if (candidates[0].scorer.score.high != candidates[i].scorer.score.high) {
+            if (candidates[0].score.high != candidates[i].score.high) {
                 splice = i;
                 break;
             }
         }
         candidates.splice(splice);
         if (candidates.length == 1) {
-            return candidates;
+            candidates[0].win(this.pot);
+            return;
         }
 
         // Attempt to get winner by low card
         console.log('Scoring by low card');
-        candidates.sort((a, b) => b.scorer.score.low - a.scorer.score.low);
+        candidates.sort((a, b) => b.score.low - a.score.low);
 
         splice = candidates.length;
         for (let i = 1; i < candidates.length; i++) {
-            if (candidates[0].scorer.score.low != candidates[i].scorer.score.low) {
+            if (candidates[0].score.low != candidates[i].score.low) {
                 splice = i;
                 break;
             }
         }
         candidates.splice(splice);
-        return candidates;
+        candidates.forEach(candidate => {
+            candidate.win(this.pot, candidates.length);
+        })
 
     }
 
@@ -458,10 +504,12 @@ class PokerGame {
             if (this.folded >= this.players.length - 1) {
                 console.log('uncontested hand');
                 this.endHand();
+                return false;
             }
             return true;
         } else {
             console.log(`${player.name} could not fold`)
+            return false;
         }
         
     }
@@ -854,6 +902,8 @@ class PokerPlayer {
         this.lastAction = "...";
         this.folded = false;
         this.kickMe = false;
+        this.won = false;
+        this.score = null;
     }
 
     reset() {
@@ -862,6 +912,18 @@ class PokerPlayer {
         this.folded = false;
         this.kickMe = false;
         this.lastAction = "...";
+        this.won = false;
+        this.score = null;
+    }
+
+    setScore(score) {
+        this.score = score;
+    }
+
+    win(pot, winnerCount = 1) {
+        this.won = true;
+        this.addChips(pot / winnerCount);
+        console.log(`${this.name} won ${pot / winnerCount}`);
     }
 
     incrementTimeInPurgatory() {
