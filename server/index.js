@@ -68,11 +68,13 @@ class PokerGame {
     }
 
     shiftSeats() {
-        this.players.push(this.players.shift());
+        const firstPlayer = this.players.shift();
+        this.players.push(firstPlayer);
     }
 
     startHand() {
         if (this.gameState == 0 && this.players.length > 1) {
+            //this.shiftSeats();
             this.pot = 0;
             this.turnIndex = 2 % this.players.length;
             this.lastRaiseID = this.players[this.turnIndex].id;
@@ -137,13 +139,8 @@ class PokerGame {
                 break;
             case 4:
                 console.log("Hand over");
-                const winners = this.findWinners();
-                console.log(`winners:`);
-                winners.forEach(winner => {
-                    console.log(winner.player.name), winner.scorer.score;
-                    winner.player.addChips(this.pot / winners.length);
-                })
-                break
+                this.endHand();
+                return;
             default:
                 console.error("Invalid turn value:", this.turn);
         }
@@ -159,6 +156,27 @@ class PokerGame {
         this.nextTurn(false);
         this.lastRaiseID = this.players[this.turnIndex].id;
         
+
+    }
+
+    restart() {
+        console.log("Restarting");
+        this.gameState = 0;
+        this.kickPlayers();        
+    }
+
+    endHand() {
+        this.gameState = 2;
+        const winners = this.findWinners();
+        console.log(`winners:`);
+        winners.forEach(winner => {
+            console.log(winner.player.name);
+            winner.player.addChips(this.pot / winners.length);
+        });
+
+        setTimeout(() => {
+            this.restart()
+        }, 5000);
 
     }
 
@@ -292,24 +310,31 @@ class PokerGame {
     }
 
     removePlayer(id) {
-        const player = this.getPlayer(id);
-        if (player) {
-            if (this.gameState == 1) {
+        if (this.gameState == 0) {
+            console.log("Removing player in gameState 0");
+            this.playerQueue = this.playerQueue.filter(player => player.id !== id);
+            this.purgatory = this.purgatory.filter(player => player.id !== id);
+            this.players = this.players.filter(player => player.id !== id);
+            this.broadcastDetails(true);
+            if (this.players.length <= 1 && this.gameState == 0) {
+                this.broadcastToPlayers(jsonMessage("roundUnready", 0));
+            }
+        } else if (this.gameState == 1) {
+            console.log("Removing player in gameState 1");
+            const player = this.getPlayer(id);
+            if (player) {
                 this.fold(player);
+                if (this.players[this.turnIndex].id == id) {
+                    this.nextTurn();
+                }
                 player.prepareKick();
                 this.broadcastDetails();
-                return;
             }
-        }
-        this.playerQueue = this.playerQueue.filter(player => player.id !== id);
-        this.purgatory = this.purgatory.filter(player => player.id !== id);
-        this.players = this.players.filter(player => player.id !== id);
-        this.broadcastDetails(true);
-        if (this.players.length <= 1 && this.gameState == 0) {
-            this.broadcastToPlayers(jsonMessage("roundUnready", 0));
-        }
-        if (this.gameState == 1 && this.players[this.turnIndex].id == id) {
-            this.nextTurn();
+        } else if (this.gameState == 2) {
+            console.log("Removing player in gameState 2");
+            this.playerQueue = this.playerQueue.filter(player => player.id !== id);
+            this.purgatory = this.purgatory.filter(player => player.id !== id);
+            this.players = this.players.filter(player => player.id !== id);
         }
     }
 
@@ -319,13 +344,11 @@ class PokerGame {
         if (player) {
             if (this.gameState == 0) {
                 if (this.players.length < this.maxPlayers) {
-                    if (player) {
-                        this.players.push(player);
-                        this.purgatory = this.purgatory.filter(player => player.id !== id);
-                        this.broadcastDetails(true);
-                        if (this.players.length > 1) {
-                            this.broadcastToPlayers(jsonMessage("roundReady", 0));
-                        }
+                    this.players.push(player);
+                    this.purgatory = this.purgatory.filter(player => player.id !== id);
+                    this.broadcastDetails(true);
+                    if (this.players.length > 1) {
+                        this.broadcastToPlayers(jsonMessage("roundReady", 0));
                     }
                 } else {
                     player.sendWS(jsonError("game full"));
@@ -343,7 +366,6 @@ class PokerGame {
 
     action(id, action, raise) {
         if (id == this.players[this.turnIndex].id) {
-            console.log('valid player')
             let actionSuccessful = false;
             switch (action) {
                 case 0:
@@ -366,9 +388,6 @@ class PokerGame {
             }
 
             if (actionSuccessful) {
-                if (this.folded >= this.players.length - 1) {
-                    console.log('uncontested hand');
-                }
                 this.nextTurn();
             }
 
@@ -428,6 +447,10 @@ class PokerGame {
             this.setLastAction("folded", player);
             player.fold();
             console.log(`${player.name} folded`)
+            if (this.folded >= this.players.length - 1) {
+                console.log('uncontested hand');
+                this.endHand();
+            }
             return true;
         } else {
             console.log(`${player.name} could not fold`)
@@ -473,14 +496,6 @@ class PokerGame {
             
         } else if (this.gameState == 1) {
             this.broadcastDetails();
-        }
-
-        if (this.folded >= this.players.length - 1) {
-            if (this.gameState != 0) {
-                console.log("All players disconnected, restarting game");
-                this.gameState = 0;
-                this.kickPlayers();
-            }
         }
 
         //console.log(`queue: ${this.playerQueue}`);
@@ -575,13 +590,13 @@ class PokerScorer {
     }
 
     checkHighCard() {
-        console.log("check high card");
+        //console.log("check high card");
         this.updateScore(0);
         return true;
     }
 
     checkPair() {
-        console.log("check pair");
+        //console.log("check pair");
         const counts = new Map();
         for (let i = 0; i < this.hand.length; i++) {
             const rank = this.hand[i].rank;
@@ -608,7 +623,7 @@ class PokerScorer {
     }
 
     checkTwoPair() {
-        console.log("check two pair");
+        //console.log("check two pair");
         const counts = new Map();
         for (let i = 0; i < this.hand.length; i++) {
             const rank = this.hand[i].rank;
@@ -637,7 +652,7 @@ class PokerScorer {
     }
 
     checkThreeOfAKind() {
-        console.log("check three of a kind");
+        //console.log("check three of a kind");
         const counts = new Map();
         for (let i = 0; i < this.hand.length; i++) {
             const rank = this.hand[i].rank;
@@ -664,7 +679,7 @@ class PokerScorer {
     }
 
     checkStraight(log = true) {
-        if (log) console.log("check straight");
+        //if (log) console.log("check straight");
         let uniqueRanks = [this.hand[0].rank];
         for (let i = 1; i < this.hand.length; i++) {
             const rank = this.hand[i].rank;
@@ -693,7 +708,7 @@ class PokerScorer {
     }
 
     checkFlush(log = true) {
-        if (log) console.log("check flush");
+        //if (log) console.log("check flush");
         const suits = { H: [], S: [], C: [], D: [] };
     
         // Group ranks by suits and check for flush
@@ -712,7 +727,7 @@ class PokerScorer {
     }
 
     checkFullHouse() {
-        console.log("check full house");
+        //console.log("check full house");
         const counts = new Map();
         for (let i = 0; i < this.hand.length; i++) {
             const rank = this.hand[i].rank;
@@ -747,7 +762,7 @@ class PokerScorer {
     }
 
     checkFourOfAKind() {
-        console.log("check four of a kind");
+        //console.log("check four of a kind");
         const counts = new Map();
         for (let i = 0; i < this.hand.length; i++) {
             const rank = this.hand[i].rank;
@@ -774,7 +789,7 @@ class PokerScorer {
     }
 
     checkStraightFlush(log = true) {
-        if (log) console.log("check straight flush");
+        //if (log) console.log("check straight flush");
         if (this.checkFlush(false) && this.checkStraight(false)) {
             this.updateScore(8, score.kickers);
             return true;
@@ -784,7 +799,7 @@ class PokerScorer {
     }
 
     checkRoyalFlush() {
-        console.log("check royal flush");
+        //console.log("check royal flush");
         if (this.checkStraightFlush(false) && this.score.primary == 14) {
             this.updateScore(9);
             return true;
@@ -1055,14 +1070,6 @@ function jsonDetails(details, minRaise, bet, pot, turn, clear = false) {
         turn: turn,
         clear: clear
     });
-}
-
-function jsonYourTurn() {
-    return jsonMessage("yourTurn", {});
-}
-
-function jsonNotYourTurn() {
-    return jsonMessage("notYourTurn", {});
 }
 
 function jsonChatMessage(message) {
