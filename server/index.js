@@ -71,21 +71,6 @@ class PokerGame {
         this.players.push(this.players.shift());
     }
 
-    sendTurns() {
-        this.players.forEach(player => {
-            try {
-                if (player == this.players[this.turnIndex]) {
-                    player.sendWS(jsonYourTurn());
-                } else {
-                    player.sendWS(jsonNotYourTurn());
-                }
-            } catch (error) {
-                console.log(error);
-            }
-        })
-            
-    }
-
     startHand() {
         if (this.gameState == 0 && this.players.length > 1) {
             this.pot = 0;
@@ -110,12 +95,10 @@ class PokerGame {
             this.resetBets();
             this.blind(this.players[0], this.minRaise, "small");
             this.blind(this.players[1], this.minRaise, "big");
-            this.broadcastDetails();
             this.broadcastToPlayers(jsonMessage("handStart", 0));
             this.restoreDeck();
             this.deal();
             this.broadcastDetails();
-            this.sendTurns();
         }
         
     }
@@ -137,7 +120,6 @@ class PokerGame {
             console.log(`Next turn`);
             player.setLastAction("...");
             this.broadcastDetails();
-            this.sendTurns();
         }
     }
 
@@ -315,6 +297,7 @@ class PokerGame {
             if (this.gameState == 1) {
                 this.fold(player);
                 player.prepareKick();
+                this.broadcastDetails();
                 return;
             }
         }
@@ -489,7 +472,7 @@ class PokerGame {
             }
             
         } else if (this.gameState == 1) {
-            this.sendTurns();
+            this.broadcastDetails();
         }
 
         if (this.folded >= this.players.length - 1) {
@@ -540,17 +523,19 @@ class PokerGame {
         this.broadcastToPlayers(jsonNamesList(playerNames));
     }
 
-    broadcastDetails(clear = false, player = null) {
+    broadcastDetails(clear = false) {
         let details = []
-        if (!player) {
-            this.players.forEach(player => {
-                details.push(this.formatDetails(player));
-            })
-        } else {
-            details.push(this.formatDetails(player))
-        }
+        this.players.forEach(player => {
+            details.push(this.formatDetails(player));
+        })
 
-        this.broadcastToPlayers(jsonDetails(details, this.minRaise, this.bet, this.pot, clear));
+        let playerTurn;
+        try {
+            playerTurn = this.players[this.turnIndex].name;
+        } catch (e) {
+            playerTurn = null;
+        }
+        this.broadcastToPlayers(jsonDetails(details, this.minRaise, this.bet, this.pot, playerTurn, clear));
     }
 
     formatDetails(player) {
@@ -1061,12 +1046,13 @@ function jsonDeal(hole) {
     });
 }
 
-function jsonDetails(details, minRaise, bet, pot, clear = false) {
+function jsonDetails(details, minRaise, bet, pot, turn, clear = false) {
     return jsonMessage("details", {
         details: details,
         minRaise: minRaise,
         bet: bet,
         pot: pot,
+        turn: turn,
         clear: clear
     });
 }

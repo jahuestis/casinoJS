@@ -302,11 +302,25 @@ socket.onmessage = (event) => {
                 players.get(details.name).setText(detailsString(details));
             }
         });
+
         gameInfo.textContent = `bet: ${data.bet} | min raise: ${data.minRaise} | pot: ${data.pot}`;
+
         const namesPreviewElement = document.getElementById("preview-players");
         if (namesPreviewElement) {
             namesPreviewElement.textContent = previewPlayersString();
         }
+
+        const turnIndicatorElement = document.getElementById("turn-indicator");
+        if (turnIndicatorElement) {
+            if (data.turn == displayName) {
+                turnIndicatorElement.textContent = "your turn";
+                myTurn = true;
+            } else {
+                turnIndicatorElement.textContent = `${data.turn}'s turn`;
+                myTurn = false;
+            }
+        }
+        
     } else if (messageType === "roundReady") {
         if (pokerQueued && !document.getElementById("start-round")) {
             console.log("round ready to start");
@@ -385,14 +399,6 @@ socket.onmessage = (event) => {
             communityCards[i].setCard(cards[i]);
             communityCards[i].setFace(true);
         }
-    } else if (messageType === "yourTurn") {
-        if (!myTurn) console.log("your turn");
-        myTurn = true;
-        document.getElementById("turn-indicator").textContent = "your turn";
-    } else if (messageType === "notYourTurn") {
-        if (myTurn) console.log("turn over");
-        myTurn = false;
-        document.getElementById("turn-indicator").textContent = "";
     } else if (messageType === "chatMessage") {
         const chat = document.getElementById("chat-div");
         const messageElement = createHeading(data.message, 2, "chat-message");
