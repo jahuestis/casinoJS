@@ -194,3 +194,12 @@ a {
     margin: .25rem;
 }
 
+#action-div {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.action {
+    flex: 1;
+}
+
