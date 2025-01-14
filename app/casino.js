@@ -319,12 +319,16 @@ socket.onmessage = (event) => {
 
         const turnIndicatorElement = document.getElementById("turn-indicator");
         if (turnIndicatorElement) {
-            if (data.turn == displayName) {
-                turnIndicatorElement.textContent = "your turn";
-                myTurn = true;
-            } else {
-                turnIndicatorElement.textContent = `${data.turn}'s turn`;
-                myTurn = false;
+            if (data.state == 2) {
+                turnIndicatorElement.textContent = "hand over";
+            } else if (data.state == 1){
+                if (data.turn == displayName) {
+                    turnIndicatorElement.textContent = "your turn";
+                    myTurn = true;
+                } else {
+                    turnIndicatorElement.textContent = `${data.turn}'s turn`;
+                    myTurn = false;
+                }
             }
         }
         

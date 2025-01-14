@@ -607,7 +607,7 @@ class PokerGame {
         } catch (e) {
             playerTurn = null;
         }
-        this.broadcastToPlayers(jsonDetails(details, this.minRaise, this.bet, this.pot, playerTurn, clear));
+        this.broadcastToPlayers(jsonDetails(details, this.minRaise, this.bet, this.pot, playerTurn, this.gameState, clear));
     }
 
     formatDetails(player) {
@@ -1140,13 +1140,14 @@ function jsonDeal(hole) {
     });
 }
 
-function jsonDetails(details, minRaise, bet, pot, turn, clear = false) {
+function jsonDetails(details, minRaise, bet, pot, turn, state, clear = false) {
     return jsonMessage("details", {
         details: details,
         minRaise: minRaise,
         bet: bet,
         pot: pot,
         turn: turn,
+        state: state,
         clear: clear
     });
 }
