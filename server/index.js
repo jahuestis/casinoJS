@@ -45,6 +45,12 @@ class PokerGame {
         }
     }
 
+    resetPlayers() {
+        this.players.forEach(player => {
+            player.reset();
+        })
+    }
+
     deal(count = 2) {
         this.players.forEach(player => {
             player.hole = [];
@@ -74,7 +80,9 @@ class PokerGame {
 
     startHand() {
         if (this.gameState == 0 && this.players.length > 1) {
-            //this.shiftSeats();
+            this.resetPlayers();
+            this.shiftSeats();
+            this.broadcastDetails(true);
             this.pot = 0;
             this.turnIndex = 2 % this.players.length;
             this.lastRaiseID = this.players[this.turnIndex].id;
@@ -846,6 +854,14 @@ class PokerPlayer {
         this.lastAction = "...";
         this.folded = false;
         this.kickMe = false;
+    }
+
+    reset() {
+        this.hole = [];
+        this.bet = 0;
+        this.folded = false;
+        this.kickMe = false;
+        this.lastAction = "...";
     }
 
     incrementTimeInPurgatory() {
