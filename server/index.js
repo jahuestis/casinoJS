@@ -107,6 +107,7 @@ class PokerGame {
             this.resetBets();
             this.blind(this.players[0], this.minRaise, "small");
             this.blind(this.players[1], this.minRaise, "big");
+            this.players[this.turnIndex].setLastAction("...");
             this.broadcastToPlayers(jsonMessage("handStart", 0));
             this.restoreDeck();
             this.deal();
@@ -115,19 +116,27 @@ class PokerGame {
         
     }
 
-    nextTurn(checkRoundOver = true) {
+    nextTurn(checkRoundOver = true, startingIndex = -1) {
         
+        if (startingIndex == -1) {
+            startingIndex = this.turnIndex;
+        }
         this.turnIndex = (this.turnIndex + 1) % this.players.length;
         const player = this.players[this.turnIndex];
         
+        if (this.turnIndex == startingIndex || this.folded >= this.players.length - 1 || this.folded + this._allIn >= this.players.length) {
+            this.endHand();
+            return;
+        }
+
         if (player.id == this.lastRaiseID && checkRoundOver) {
             console.log("Next round");
             this.nextRound();
             return;
         }
 
-        if (!player || ((player.folded || player.allIn) && (this.folded >= this.players.length - 1 || this.folded + this._allIn >= this.players.length))) {
-            this.nextTurn(checkRoundOver);
+        if (!player || player.folded || player.allIn) {
+            this.nextTurn(checkRoundOver, startingIndex);
         } else {
             console.log(`Next turn`);
             player.setLastAction("...");
@@ -224,6 +233,9 @@ class PokerGame {
             player.setLastAction(showHand);
         })
 
+        this.bet = 0;
+        this.minRaise = 0;
+        this.pot = 0;
         this.broadcastDetails();
 
         setTimeout(() => {
@@ -495,10 +507,6 @@ class PokerGame {
         }
         this.setLastAction("all-in", player);
         console.log(`${player.name} all in (${this.bet})`)
-        if (this.folded >= this.players.length - 1 || this.folded + this._allIn >= this.players.length) {
-            this.endHand();
-            return false;
-        }
         return true;
     }
 
@@ -520,10 +528,6 @@ class PokerGame {
             this.setLastAction("folded", player);
             player.fold();
             console.log(`${player.name} folded`)
-            if (this.folded >= this.players.length - 1 || this.folded + this._allIn >= this.players.length) {
-                this.endHand();
-                return false;
-            }
             return true;
         } else {
             console.log(`${player.name} could not fold`)
@@ -948,7 +952,7 @@ class PokerPlayer {
     win(pot, winnerCount = 1) {
         this.won = true;
         this.addChips(pot / winnerCount);
-        console.log(`${this.name} won ${pot / winnerCount}`);
+        console.log(`${this.name} won ${pot / winnerCount} chips`);
     }
 
     incrementTimeInPurgatory() {
