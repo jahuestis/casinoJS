@@ -1,13 +1,4 @@
 
-@font-face {
-    font-family: 'pixel';
-    src: url('fonts/subset-pixel.woff2') format('woff2'),
-        url('fonts/subset-pixel.woff') format('woff');
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
-    
-}
 
 html {
     -webkit-font-smoothing: none;
@@ -46,7 +37,7 @@ button, input {
 }
 
 .clickable:active, button:active {
-    transform: scale(0.95); /* Slightly shrink the button */
+    transform: scale(0.975); /* Slightly shrink the button */
 
 }
 

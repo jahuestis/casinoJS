@@ -186,7 +186,7 @@ class PokerGame {
                 console.error("Invalid turn value:", this.turn);
         }
         this.players.forEach(player => {
-            if (!player.folded) {
+            if (!player.folded && !player.allIn) {
                 player.setLastAction("...");
             }
         })
