@@ -467,16 +467,15 @@ class PokerGame {
     }
 
     blind(player, amount, blindSize) {
-        if (player.chips + player.bet >= this.bet + amount) {
-            this.bet = this.bet + amount;
-            player.setBet(this.bet);
-            this.setLastAction(`${blindSize} blind`, player);
-            console.log(`${player.name} (${player.chips}) posted ${blindSize} blind (${this.bet})`);
-            return true;
-        } else {
-            console.log(`${player.name} (${player.chips}) could not post ${blindSize} blind (${this.bet})`);
-            return false;
+        if (player.chips < this.bet + amount) {
+            player.chips = this.bet + amount;
         }
+
+        this.bet = this.bet + amount;
+        player.setBet(this.bet);
+        this.setLastAction(`${blindSize} blind`, player);
+        console.log(`${player.name} (${player.chips}) posted ${blindSize} blind (${this.bet})`);
+        return true;
     }
 
     raise(player, amount) {
@@ -523,16 +522,16 @@ class PokerGame {
     }
 
     fold(player) {
-        if (this.folded < this.players.length - 1) {
+        //if (this.folded < this.players.length - 1) {
             this.folded ++;
             this.setLastAction("folded", player);
             player.fold();
             console.log(`${player.name} folded`)
             return true;
-        } else {
-            console.log(`${player.name} could not fold`)
-            return false;
-        }
+        //} else {
+            //console.log(`${player.name} could not fold`)
+            //return false;
+        //}
         
     }
 
