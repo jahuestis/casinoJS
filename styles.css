@@ -205,3 +205,9 @@ a {
 .end-game-button {
     flex: 1;
 }
+
+.menu-button {
+    width: 12ch;
+    justify-self: center;
+    align-self: center;
+}

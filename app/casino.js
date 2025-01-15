@@ -206,7 +206,6 @@ function mainMenuScreen() {
     while (gameArea.firstChild) {
         gameArea.firstChild.remove();
     }
-    mainMenu.appendChild(chipsCounter);
     gameArea.appendChild(mainMenu);
 }
 
@@ -257,10 +256,11 @@ function detailsString(details) {
 
 const title = createHeading("casinoJS");
 const chipsCounter = createHeading("", 2, "chips-counter");
+const chipsCounter2 = createHeading("", 2, "chips-counter");
 const gameInfo = createHeading("", 2, "game-info");
-const chipsButton = createButton("get chips");
+const chipsButton = createButton("get chips", "chips-button", ["menu-button"]);
 chipsButton.addEventListener("click", () => updateChips(25));
-const pokerButton = createButton("play poker");
+const pokerButton = createButton("play poker", "poker-button", ["menu-button"]);
 pokerButton.addEventListener("click", () => requestPoker());
 const blackjackButton = createButton("blackjack");
 const mainMenu = createDiv([title, createSpacer(), pokerButton, chipsButton, createSpacer(), chipsCounter], "main-menu");
@@ -281,9 +281,11 @@ socket.onmessage = (event) => {
         displayName = data.name;
         chips = data.chips;
         chipsCounter.textContent = `${displayName}: ${chips} chips`;
+        chipsCounter2.textContent = `${displayName}: ${chips} chips`;
     } else if (messageType === "chips") {
         chips = data.chips;
         chipsCounter.textContent = `${displayName}: ${chips} chips`;
+        chipsCounter2.textContent = `${displayName}: ${chips} chips`;
     } else if (messageType === "invitePoker") {
         if (pokerQueued) {
             console.log("poker accepted")
@@ -385,7 +387,7 @@ socket.onmessage = (event) => {
         const cardDiv = createDiv([communityDiv, holeDiv], "card-div");
         const buttonDiv = createDiv(createActionButtons(), "action-div");
         const turnIndicator = createHeading("", 2, "turn-indicator");
-        const pokerStack = createDiv([chipsCounter, gameInfo, cardDiv, turnIndicator, buttonDiv], "poker-stack");
+        const pokerStack = createDiv([chipsCounter2, gameInfo, cardDiv, turnIndicator, buttonDiv], "poker-stack");
         const pokerWrapper = createDiv([pokerStack], "poker-wrapper");
         gameArea.appendChild(playerStack);
         gameArea.appendChild(pokerWrapper);
