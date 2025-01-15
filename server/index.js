@@ -231,15 +231,15 @@ class PokerGame {
 
         const hands = {
             0: "HC",
-            1: "P",
-            2: "2P",
-            3: "3OAK",
-            4: "S",
-            5: "F",
+            1: "PR",
+            2: "2PR",
+            3: "3OK",
+            4: "STR",
+            5: "FL",
             6: "FH",
-            7: "4OAK",
-            8: "SF",
-            9: "RF"
+            7: "4OK",
+            8: "STRFL",
+            9: "ROYFL"
         }
 
         this.players.forEach(player => {
