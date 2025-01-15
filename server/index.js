@@ -24,6 +24,7 @@ class PokerGame {
         this.bet = 0;
         this.pot = 0;
         this.folded = 0;
+        this._allIn = 0;
         this.lastAction = "";
         this.lastRaiseID;
         this.restoreDeck();
@@ -89,6 +90,7 @@ class PokerGame {
             this.round = 0;
             this.gameState = 1;
             this.folded = 0;
+            this._allIn = 0;
             this.lastAction = "startHand";
 
             // determine min raise based on average chip count
@@ -124,7 +126,7 @@ class PokerGame {
             return;
         }
 
-        if (!player || ((player.folded) && (this.folded < this.players.length))) {
+        if (!player || ((player.folded || player.allIn) && (this.folded >= this.players.length - 1 || this.folded + this._allIn >= this.players.length))) {
             this.nextTurn(checkRoundOver);
         } else {
             console.log(`Next turn`);
@@ -466,7 +468,7 @@ class PokerGame {
     }
 
     raise(player, amount) {
-        if (player.chips + player.bet >= this.bet + amount && amount >= this.minRaise) {
+        if (player.chips + player.bet > this.bet + amount && amount >= this.minRaise) {
             this.minRaise = amount;
             this.bet = this.bet + amount;
             player.setBet(this.bet);
@@ -481,12 +483,27 @@ class PokerGame {
     }
 
     allIn(player) {
-        console.log("All-in not implemented");
-        return false;
+        if (player.chips <= 0) {
+            return false;
+        }
+
+        this._allIn ++;
+        player.goAllIn();
+        if (player.bet > this.bet) {
+            this.bet = player.bet;
+            this.lastRaiseID = player.id;
+        }
+        this.setLastAction("all-in", player);
+        console.log(`${player.name} all in (${this.bet})`)
+        if (this.folded >= this.players.length - 1 || this.folded + this._allIn >= this.players.length) {
+            this.endHand();
+            return false;
+        }
+        return true;
     }
 
     call(player) {
-        if (this.bet > 0 && player.chips + player.bet >= this.bet && player.bet < this.bet) {
+        if (this.bet > 0 && player.chips + player.bet > this.bet && player.bet < this.bet) {
             player.setBet(this.bet);
             this.setLastAction("called", player);
             console.log(`${player.name} (${player.chips}) called (${this.bet})`)
@@ -503,8 +520,7 @@ class PokerGame {
             this.setLastAction("folded", player);
             player.fold();
             console.log(`${player.name} folded`)
-            if (this.folded >= this.players.length - 1) {
-                console.log('uncontested hand');
+            if (this.folded >= this.players.length - 1 || this.folded + this._allIn >= this.players.length) {
                 this.endHand();
                 return false;
             }
@@ -552,11 +568,13 @@ class PokerGame {
                 }
             }
             
-        } else if (this.gameState == 1) {
-            this.broadcastDetails();
+            // Give players option to start when game is ready
             if (this.players.length > 1) {
                 this.broadcastToPlayers(jsonMessage("roundReady", 0));
             }
+
+        } else if (this.gameState == 1) {
+            this.broadcastDetails();
         }
 
         //console.log(`queue: ${this.playerQueue}`);
@@ -906,6 +924,7 @@ class PokerPlayer {
         this.bet = 0;
         this.lastAction = "...";
         this.folded = false;
+        this.allIn = false;
         this.kickMe = false;
         this.won = false;
         this.score = null;
@@ -915,6 +934,7 @@ class PokerPlayer {
         this.hole = [];
         this.bet = 0;
         this.folded = false;
+        this.allIn = false;
         this.kickMe = false;
         this.lastAction = "...";
         this.won = false;
@@ -991,6 +1011,11 @@ class PokerPlayer {
         } catch (error) {
             
         }
+    }
+
+    goAllIn() {
+        this.setBet(this.bet + this.chips);
+        this.allIn = true;
     }
 
     fold() {
