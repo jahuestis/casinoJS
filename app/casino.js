@@ -91,7 +91,7 @@ function createButton(text, id = "game-button", classes = []) {
     return button;
 }
 
-function createInput(value = "", id = "raise-input", classes = []) {
+function createInput(value = "", id = "game-input", classes = []) {
     const input = document.createElement("input");
     input.id = id;
     input.classList.add(...classes);
@@ -123,7 +123,7 @@ function createHeading(text, headingSize = 1, id = "game-heading", classes = [])
 
 function createActionButtons() {
     const buttons = [];
-    buttons.push(createInput("25", "raise-input", ["action"]));
+    buttons.push(createInput("0", "raise-input", ["action"]));
     buttons.push(createButton("raise", "raise", ["action"])); // action 0
     buttons.push(createButton("call", "call", ["action"])); // action 1
     buttons.push(createButton("all-in", "all-in", ["action"])); // action 2
@@ -315,7 +315,7 @@ socket.onmessage = (event) => {
 
         const raiseInput = document.getElementById("raise-input");
         if (raiseInput) {
-            if (raiseInput.value < data.minRaise) {
+            if (raiseInput.value < data.minRaise || data.forceRaiseUpdate) {
                 raiseInput.value = data.minRaise;
             }
         }

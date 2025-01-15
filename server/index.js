@@ -117,7 +117,7 @@ class PokerGame {
             this.broadcastToPlayers(jsonMessage("handStart", 0));
             this.restoreDeck();
             this.deal();
-            this.broadcastDetails();
+            this.broadcastDetails(false, true);
         }
         
     }
@@ -191,7 +191,7 @@ class PokerGame {
             }
         })
         this.resetBets()
-        this.broadcastDetails();
+        this.broadcastDetails(false, true);
         this.lastAction = "check";
         this.turnIndex = this.players.length - 1;
         this.nextTurn(false);
@@ -259,7 +259,7 @@ class PokerGame {
         this.bet = 0;
         this.minRaise = 0;
         this.pot = 0;
-        this.broadcastDetails();
+        this.broadcastDetails(false, true);
 
         setTimeout(() => {
             this.restart()
@@ -644,7 +644,7 @@ class PokerGame {
         this.broadcastToPlayers(jsonNamesList(playerNames));
     }
 
-    broadcastDetails(clear = false) {
+    broadcastDetails(clear = false, forceRaiseUpdate = false) {
         let details = []
         this.players.forEach(player => {
             details.push(this.formatDetails(player));
@@ -656,7 +656,7 @@ class PokerGame {
         } catch (e) {
             playerTurn = null;
         }
-        this.broadcastToPlayers(jsonDetails(details, this.minRaise, this.bet, this.pot, playerTurn, this.gameState, clear));
+        this.broadcastToPlayers(jsonDetails(details, this.minRaise, this.bet, this.pot, playerTurn, this.gameState, clear, forceRaiseUpdate));
     }
 
     formatDetails(player) {
@@ -664,7 +664,6 @@ class PokerGame {
             name: player.name, 
             chips: player.chips, 
             lastAction: player.lastAction, 
-            folded: player.folded
         }
     }
 
@@ -1196,7 +1195,7 @@ function jsonDeal(hole) {
     });
 }
 
-function jsonDetails(details, minRaise, bet, pot, turn, state, clear = false) {
+function jsonDetails(details, minRaise, bet, pot, turn, state, clear = false, forceRaiseUpdate = false) {
     return jsonMessage("details", {
         details: details,
         minRaise: minRaise,
@@ -1204,7 +1203,8 @@ function jsonDetails(details, minRaise, bet, pot, turn, state, clear = false) {
         pot: pot,
         turn: turn,
         state: state,
-        clear: clear
+        clear: clear,
+        forceRaiseUpdate: forceRaiseUpdate
     });
 }
 
