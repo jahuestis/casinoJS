@@ -33,6 +33,9 @@ class PokerGame {
             this.update();
         }, 2500);
 
+        this.actionTimeout = null;
+        this.autoKickTime = 75;
+
 
     }
 
@@ -81,6 +84,7 @@ class PokerGame {
 
     startHand() {
         if (this.gameState == 0 && this.players.length > 1) {
+            this.clearActionTimeout();
             this.resetPlayers();
             this.shiftSeats();
             this.broadcastDetails(true);
@@ -107,13 +111,30 @@ class PokerGame {
             this.resetBets();
             this.blind(this.players[0], this.minRaise, "small");
             this.blind(this.players[1], this.minRaise, "big");
-            this.players[this.turnIndex].setLastAction("...");
+            const firstActionPlayer = this.players[this.turnIndex];
+            firstActionPlayer.setLastAction("...");
+            this.startActionTimeout(firstActionPlayer);
             this.broadcastToPlayers(jsonMessage("handStart", 0));
             this.restoreDeck();
             this.deal();
             this.broadcastDetails();
         }
         
+    }
+
+    autoKick(player) {
+        console.log(`auto-kicking ${player.name} for inactivity`);
+        this.removePlayer(player.id);
+    }
+
+    startActionTimeout(player) {
+        this.actionTimeout = setTimeout(() => this.autoKick(player), this.autoKickTime * 1000);
+    }
+
+    clearActionTimeout() {
+        try {
+            clearTimeout(this.actionTimeout);
+        } catch (e) {}
     }
 
     nextTurn(checkRoundOver = true, startingIndex = -1) {
@@ -140,6 +161,7 @@ class PokerGame {
         } else {
             console.log(`Next turn`);
             player.setLastAction("...");
+            this.startActionTimeout(player);
             this.broadcastDetails();
         }
     }
@@ -186,6 +208,7 @@ class PokerGame {
     }
 
     endHand() {
+        this.clearActionTimeout();
         this.reveal(5);
         this.gameState = 2;
         this.score();
@@ -458,6 +481,7 @@ class PokerGame {
             }
 
             if (actionSuccessful) {
+                this.clearActionTimeout();
                 this.nextTurn();
             }
 
@@ -760,7 +784,7 @@ class PokerScorer {
         }
     }
 
-    checkStraight(log = true) {
+    checkStraight() {
         //if (log) console.log("check straight");
         let uniqueRanks = [this.hand[0].rank];
         for (let i = 1; i < this.hand.length; i++) {
@@ -789,7 +813,7 @@ class PokerScorer {
         }
     }
 
-    checkFlush(log = true) {
+    checkFlush() {
         //if (log) console.log("check flush");
         const suits = { H: [], S: [], C: [], D: [] };
     
@@ -870,10 +894,10 @@ class PokerScorer {
         }
     }
 
-    checkStraightFlush(log = true) {
+    checkStraightFlush() {
         //if (log) console.log("check straight flush");
-        if (this.checkFlush(false) && this.checkStraight(false)) {
-            this.updateScore(8, score.kickers);
+        if (this.checkFlush() && this.checkStraight()) {
+            this.updateScore(8, this.score.kickers);
             return true;
         } else {
             return false;
@@ -882,7 +906,7 @@ class PokerScorer {
 
     checkRoyalFlush() {
         //console.log("check royal flush");
-        if (this.checkStraightFlush(false) && this.score.primary == 14) {
+        if (this.checkStraightFlush() && this.score.primary == 14) {
             this.updateScore(9);
             return true;
         } else {
