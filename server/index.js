@@ -22,7 +22,7 @@ class PokerGame {
         this.defaultMinRaise = 0;
         this.minRaise = 0;
         this.bet = 0;
-        this.pot = 0;
+        this.pots = []
         this.folded = 0;
         this._allIn = 0;
         this.lastAction = "";
@@ -37,6 +37,34 @@ class PokerGame {
         this.autoKickTime = 75;
 
 
+    }
+
+    initializePots() {
+        this.pots = [];
+        this.resetBets();
+    }
+
+    addPots() {
+        let betters = [...this.players];
+        betters.sort((a, b) => a.bet - b.bet);
+
+        for (let i = 0; i < betters.length; i++) {
+            let newPot = {eligible: [], size: 0}
+            let potBet = betters[i].bet;
+            for (let j = i; j < betters.length; j++) {
+                if (betters[j].bet > 0) {
+                    betters[j].bet -= potBet;
+                    newPot.size += potBet;
+                    newPot.eligible.push(betters[j]);
+                }
+            }
+            if (newPot.size > 0) {
+                this.pots.push(newPot);
+            }
+        }
+
+        this.resetBets();
+        console.log(this.pots);
     }
 
     restoreDeck() {
@@ -84,28 +112,28 @@ class PokerGame {
 
     startHand() {
         if (this.gameState == 0 && this.players.length > 1) {
-            this.clearActionTimeout();
-            this.resetPlayers();
-            this.shiftSeats();
-            this.broadcastDetails(true);
-            this.pot = 0;
-            this.turnIndex = 2 % this.players.length;
-            this.lastRaiseID = this.players[this.turnIndex].id;
-            this.round = 0;
-            this.gameState = 1;
-            this.folded = 0;
-            this._allIn = 0;
-            this.lastAction = "startHand";
-
-            // determine min raise based on average chip count
+            // determine default min raise based on average chip count
             let totalChips = 0;
             this.players.forEach(player => {
                 totalChips += player.chips;
             });
             const averageChips = totalChips / this.players.length;
             this.defaultMinRaise = Math.ceil(averageChips / 150) * 5;
-            this.minRaise = this.defaultMinRaise;
-            console.log(`Min raise set to ${this.minRaise}`);
+            console.log(`default min raise set to ${this.minRaise}`);
+
+            // Prepare game
+            this.clearActionTimeout();
+            this.resetPlayers();
+            this.shiftSeats();
+            this.initializePots();
+            this.broadcastDetails(true);
+            this.turnIndex = 2 % this.players.length;
+            this.lastRaiseID = this.players[this.turnIndex].id;
+            this.round = 0;
+            this.folded = 0;
+            this._allIn = 0;
+            this.lastAction = "startHand";
+            this.gameState = 1;
             
             console.log(`Starting hand with ${this.players.length} players`);
             this.resetBets();
@@ -190,7 +218,7 @@ class PokerGame {
                 player.setLastAction("...");
             }
         })
-        this.resetBets()
+        this.addPots();
         this.broadcastDetails(false, true);
         this.lastAction = "check";
         this.turnIndex = this.players.length - 1;
@@ -210,8 +238,14 @@ class PokerGame {
     endHand() {
         this.clearActionTimeout();
         this.reveal(5);
+        this.addPots();
         this.gameState = 2;
         this.score();
+
+        // get payouts
+        this.pots.forEach(pot => {
+            this.getPayout(pot);
+        })
 
         const ranks = {
             2: "2",
@@ -247,18 +281,16 @@ class PokerGame {
             const hole2 = ranks[player.hole[1].rank] + player.hole[1].suit;
             //console.log(player.score);
             let showHand = `${hole1} ${hole2} ${hands[player.score.level]}`;
-            if (player.won) {
-                showHand += ` (W)`;
-            } else if (player.folded) {
-                showHand += ` (F)`;
+            if (player.folded) {
+                showHand += " F";
             }
+            showHand += " " + player.payout;
 
             player.setLastAction(showHand);
         })
 
-        this.bet = 0;
+        this.bets = [];
         this.minRaise = 0;
-        this.pot = 0;
         this.broadcastDetails(false, true);
 
         setTimeout(() => {
@@ -272,13 +304,11 @@ class PokerGame {
             const scorer = new PokerScorer(player.hole, this.community);
             player.setScore(scorer.score);
         })
-
-        this.findWinners();
     }
 
-    findWinners() {
+    getPayout(pot) {
         let candidates = [];
-        this.players.forEach(player => {
+        pot.eligible.forEach(player => {
             if (!player.folded) {
                 candidates.push(player);
             }
@@ -297,7 +327,7 @@ class PokerGame {
         }
         candidates.splice(splice);
         if (candidates.length == 1) {
-            candidates[0].win(this.pot);
+            candidates[0].win(pot.size);
             return;
         }
 
@@ -321,7 +351,7 @@ class PokerGame {
         }
         candidates.splice(splice);
         if (candidates.length == 1) {
-            candidates[0].win(this.pot);
+            candidates[0].win(pot.size);
             return;
         }
 
@@ -338,7 +368,7 @@ class PokerGame {
         }
         candidates.splice(splice);
         if (candidates.length == 1) {
-            candidates[0].win(this.pot);
+            candidates[0].win(pot.size);
             return;
         }
 
@@ -355,7 +385,7 @@ class PokerGame {
         }
         candidates.splice(splice);
         candidates.forEach(candidate => {
-            candidate.win(this.pot, candidates.length);
+            candidate.win(pot.size, candidates.length);
         })
 
     }
@@ -570,10 +600,6 @@ class PokerGame {
         }
     }
 
-    increasePot(amount) {
-        this.pot += amount;
-    }
-
     update() {
         //console.log("update");
         if (this.gameState == 0) {
@@ -656,7 +682,11 @@ class PokerGame {
         } catch (e) {
             playerTurn = null;
         }
-        this.broadcastToPlayers(jsonDetails(details, this.minRaise, this.bet, this.pot, playerTurn, this.gameState, clear, forceRaiseUpdate));
+        let maxPayout = 0;
+        this.pots.forEach(pot => {
+            maxPayout += pot.size;
+        })
+        this.broadcastToPlayers(jsonDetails(details, this.minRaise, this.bet, maxPayout, playerTurn, this.gameState, clear, forceRaiseUpdate));
     }
 
     formatDetails(player) {
@@ -948,22 +978,22 @@ class PokerPlayer {
         this.timeInPurgatory = 0;
         this.chips = chips;
         this.bet = 0;
+        this.payout = 0;
         this.lastAction = "...";
         this.folded = false;
         this.allIn = false;
         this.kickMe = false;
-        this.won = false;
         this.score = null;
     }
 
     reset() {
         this.hole = [];
         this.bet = 0;
+        this.payout = 0;
         this.folded = false;
         this.allIn = false;
         this.kickMe = false;
         this.lastAction = "...";
-        this.won = false;
         this.score = null;
     }
 
@@ -972,9 +1002,10 @@ class PokerPlayer {
     }
 
     win(pot, winnerCount = 1) {
-        this.won = true;
-        this.addChips(pot / winnerCount);
-        console.log(`${this.name} won ${pot / winnerCount} chips`);
+        const payout = Math.floor(pot / winnerCount);
+        this.payout += payout;
+        this.addChips(payout);
+        console.log(`${this.name} won ${payout} chips`);
     }
 
     incrementTimeInPurgatory() {
@@ -995,7 +1026,6 @@ class PokerPlayer {
 
     setBet(newBet) {
         const betAmount = newBet - this.bet;
-        poker.increasePot(betAmount);
         this.chips -= betAmount;
         this.bet = newBet;
         this.sendChips();
@@ -1195,12 +1225,12 @@ function jsonDeal(hole) {
     });
 }
 
-function jsonDetails(details, minRaise, bet, pot, turn, state, clear = false, forceRaiseUpdate = false) {
+function jsonDetails(details, minRaise, bet, maxPayout, turn, state, clear = false, forceRaiseUpdate = false) {
     return jsonMessage("details", {
         details: details,
         minRaise: minRaise,
         bet: bet,
-        pot: pot,
+        maxPayout: maxPayout,
         turn: turn,
         state: state,
         clear: clear,

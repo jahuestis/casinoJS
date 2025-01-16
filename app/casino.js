@@ -313,7 +313,7 @@ socket.onmessage = (event) => {
             }
         });
 
-        gameInfo.textContent = `bet: ${data.bet} | min raise: ${data.minRaise} | pot: ${data.pot}`;
+        gameInfo.textContent = `bet: ${data.bet} | min raise: ${data.minRaise} | max payout: ${data.maxPayout}`;
 
         const raiseInput = document.getElementById("raise-input");
         if (raiseInput) {
