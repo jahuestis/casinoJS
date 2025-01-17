@@ -93,11 +93,12 @@ function createButton(text, id = "game-button", classes = []) {
     return button;
 }
 
-function createInput(value = "", id = "game-input", classes = []) {
+function createInput(value = "", id = "game-input", classes = [], autoComplete = false) {
     const input = document.createElement("input");
     input.id = id;
     input.classList.add(...classes);
     input.value = value;
+    input.setAttribute("autocomplete", autoComplete? "on" : "off");
     return input;
 }
 
