@@ -284,9 +284,10 @@ class PokerGame {
             //console.log(player.score);
             let showHand = `${hole1} ${hole2} ${hands[player.score.level]}`;
             if (player.folded) {
-                showHand += " F";
+                showHand += ` F`;
+            } else if (player.payout > 0) {
+                showHand += ` ${player.payout}`;
             }
-            showHand += " " + player.payout;
 
             player.setLastAction(showHand);
         })
@@ -295,9 +296,7 @@ class PokerGame {
         this.minRaise = 0;
         this.broadcastDetails(false, true);
 
-        setTimeout(() => {
-            this.restart()
-        }, 5000);
+        this.restart();
 
     }
 
@@ -412,7 +411,10 @@ class PokerGame {
 
 
     addToQueue(player) {
-        this.playerQueue.push(player);
+        this.removePlayer(player.id);
+        if (!this.getPlayer(player.id)) {
+            this.playerQueue.push(player);
+        }
     }
 
 
