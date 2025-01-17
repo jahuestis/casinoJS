@@ -1142,7 +1142,7 @@ socket.on('connection', (ws) => {
             if (type === "clientConnected") {
                 if (clients.has(data.id)) {
                     console.log("existing player reconnected");
-                    clients(data.id).updateWS(ws);
+                    clients.get(data.id).updateWS(ws);
                     ws.send(jsonRename(clients.get(data.id).name));
                     if (poker.getPlayer(data.id)) {
                         console.log("active player reconnected, broadcasting details");
