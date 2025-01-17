@@ -1121,6 +1121,15 @@ const poker = new PokerGame();
 socket.on('connection', (ws) => {
     try {
         ws.send(jsonRequestClient(uuidv4()));
+         // Set up a keepalive ping
+        const interval = setInterval(() => {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.ping(); // Send ping frame
+            } else {
+                clearInterval(interval);
+                console.log('WebSocket connection closed, keepalive ping interval cleared');
+            }
+        }, 30000); // Send every 30 seconds
     } catch (error) {
         console.log(error);
     }

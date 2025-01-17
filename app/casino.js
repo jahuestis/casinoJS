@@ -296,197 +296,231 @@ function rename() {
 
 
 // -- Client --
-const socket = new WebSocket('ws://localhost:3000');
+let socket;
 
-socket.onmessage = (event) => {
-    const message = JSON.parse(event.data);
-    const messageType = message.type;
-    const data = message.data;
-    if (messageType === "requestClient") {
-        if (!playerID) {
-            playerID = data.id;
-        }
-        socket.send(jsonConnect(displayName, playerID));
-    } else if (messageType === "initializeClient") {
-        displayName = data.name;
-        chips = data.chips;
-        chipsCounter.textContent = `${displayName}: ${chips} chips`;
-        chipsCounter2.textContent = `${displayName}: ${chips} chips`;
-    } else if (messageType === "chips") {
-        chips = data.chips;
-        chipsCounter.textContent = `${displayName}: ${chips} chips`;
-        chipsCounter2.textContent = `${displayName}: ${chips} chips`;
-    } else if (messageType === "invitePoker") {
-        if (pokerQueued) {
-            console.log("poker accepted")
-            socket.send(jsonAcceptPoker());
-        } 
-    } else if (messageType === "error") {
-        while (gameArea.firstChild) {
-            gameArea.removeChild(gameArea.firstChild);
-        }
-        gameArea.appendChild(mainMenu);
-        console.log(`error: ${data.error}`);
-        window.alert(`error: ${data.error}`);
-        pokerQueued = false;
-    } else if (messageType === "details") {
-        const details = data.details;
-        const clear = data.clear;
-        if (clear) {
-            players.clear();
-        }
-        details.forEach(details => {
-            if (!players.has(details.name)) {
-                players.set(details.name, new liveHeading(detailsString(details), 2, "player-info"));
-            } else {
-                players.get(details.name).setText(detailsString(details));
+function connectWebSocket() {
+    if (socket) {
+        socket.close();
+    }
+    
+    socket = new WebSocket('ws://localhost:3000');
+
+    socket.addEventListener('message', (event) => {
+        const message = JSON.parse(event.data);
+        const messageType = message.type;
+        const data = message.data;
+        if (messageType === "requestClient") {
+            if (!playerID) {
+                playerID = data.id;
             }
-        });
-        const community = data.community;
-        if (community.length > communityRevealed && communityCards.length == 5) {
-            for (let i = communityRevealed; i < community.length; i++) {
-                communityCards[i].setCard(community[i]);
-                communityCards[i].setFace(true);
+            socket.send(jsonConnect(displayName, playerID));
+        } else if (messageType === "initializeClient") {
+            displayName = data.name;
+            chips = data.chips;
+            chipsCounter.textContent = `${displayName}: ${chips} chips`;
+            chipsCounter2.textContent = `${displayName}: ${chips} chips`;
+        } else if (messageType === "chips") {
+            chips = data.chips;
+            chipsCounter.textContent = `${displayName}: ${chips} chips`;
+            chipsCounter2.textContent = `${displayName}: ${chips} chips`;
+        } else if (messageType === "invitePoker") {
+            if (pokerQueued) {
+                console.log("poker accepted")
+                socket.send(jsonAcceptPoker());
+            } 
+        } else if (messageType === "error") {
+            while (gameArea.firstChild) {
+                gameArea.removeChild(gameArea.firstChild);
             }
-            communityRevealed = data.community.length;
-        }
-
-        gameInfo.textContent = `bet: ${data.bet} | min raise: ${data.minRaise} | max payout: ${data.maxPayout}`;
-
-        const raiseInput = document.getElementById("raise-input");
-        if (raiseInput) {
-            if (minRaise < data.minRaise || data.forceRaiseUpdate) {
-                minRaise = data.minRaise;
-                raiseInput.value = minRaise;
+            gameArea.appendChild(mainMenu);
+            console.log(`error: ${data.error}`);
+            window.alert(`error: ${data.error}`);
+            pokerQueued = false;
+        } else if (messageType === "details") {
+            const details = data.details;
+            const clear = data.clear;
+            if (clear) {
+                players.clear();
             }
-        }
-
-        const namesPreviewElement = document.getElementById("preview-players");
-        if (namesPreviewElement) {
-            namesPreviewElement.textContent = previewPlayersString();
-        }
-
-        const turnIndicatorElement = document.getElementById("turn-indicator");
-        if (turnIndicatorElement) {
-            if (data.state == 2) {
-                turnIndicatorElement.textContent = "hand over";
-            } else if (data.state == 1){
-                if (data.turn == displayName) {
-                    turnIndicatorElement.textContent = "your turn";
-                    myTurn = true;
+            details.forEach(details => {
+                if (!players.has(details.name)) {
+                    players.set(details.name, new liveHeading(detailsString(details), 2, "player-info"));
                 } else {
-                    turnIndicatorElement.textContent = `${data.turn}'s turn`;
-                    myTurn = false;
+                    players.get(details.name).setText(detailsString(details));
+                }
+            });
+            const community = data.community;
+            if (community.length > communityRevealed && communityCards.length == 5) {
+                for (let i = communityRevealed; i < community.length; i++) {
+                    communityCards[i].setCard(community[i]);
+                    communityCards[i].setFace(true);
+                }
+                communityRevealed = data.community.length;
+            }
+
+            gameInfo.textContent = `bet: ${data.bet} | min raise: ${data.minRaise} | max payout: ${data.maxPayout}`;
+
+            const raiseInput = document.getElementById("raise-input");
+            if (raiseInput) {
+                if (minRaise < data.minRaise || data.forceRaiseUpdate) {
+                    minRaise = data.minRaise;
+                    raiseInput.value = minRaise;
                 }
             }
-        }
-        
-    } else if (messageType === "roundReady") {
-        if (pokerQueued && !document.getElementById("start-round")) {
-            console.log("round ready to start");
-            pokerReadyScreen();
-        }
-    } else if (messageType === "roundUnready") {
-        if (pokerQueued) {
-            pokerQueueScreen(false);
-        }
-    } else if (messageType === "handStart") {
-        console.log("hand started!");
-        communityRevealed = 0;
-        minRaise = 0;
 
-        while (gameArea.firstChild) {
-            gameArea.removeChild(gameArea.firstChild);
-        }
-        const chatDiv = createDiv([], "chat-div");
-        const chatInput = createInput("", "chat-input");
-        const chatSend = createButton("send", "chat-send");
-        function sendMessage() {
-            const trimmedMessage = String(chatInput.value).trim();
-            if (trimmedMessage) {
-                console.log(`sending chat message: ${chatInput.value}`);
-                socket.send(jsonChatMessage(chatInput.value));
+            const namesPreviewElement = document.getElementById("preview-players");
+            if (namesPreviewElement) {
+                namesPreviewElement.textContent = previewPlayersString();
             }
-            chatInput.value = "";
-        }
-        chatSend.addEventListener("click", () => sendMessage());
-        chatInput.addEventListener("keydown", (event) => {
-            if (event.key === "Enter") {
-                sendMessage();
+
+            const turnIndicatorElement = document.getElementById("turn-indicator");
+            if (turnIndicatorElement) {
+                if (data.state == 2) {
+                    turnIndicatorElement.textContent = "hand over";
+                } else if (data.state == 1){
+                    if (data.turn == displayName) {
+                        turnIndicatorElement.textContent = "your turn";
+                        myTurn = true;
+                    } else {
+                        turnIndicatorElement.textContent = `${data.turn}'s turn`;
+                        myTurn = false;
+                    }
+                }
             }
-        })
-        const chatInputDiv = createDiv([chatInput,chatSend], "chat-input-div");
-        const chatStack = createDiv([chatDiv, createSpacer(), chatInputDiv], "chat-stack");
-        const playerInfoDiv = createDiv([], "player-info-div");
-        Array.from(players.keys()).forEach(name => {
-            playerInfoDiv.appendChild(players.get(name).element);
-        })
+            
+        } else if (messageType === "roundReady") {
+            if (pokerQueued && !document.getElementById("start-round")) {
+                console.log("round ready to start");
+                pokerReadyScreen();
+            }
+        } else if (messageType === "roundUnready") {
+            if (pokerQueued) {
+                pokerQueueScreen(false);
+            }
+        } else if (messageType === "handStart") {
+            console.log("hand started!");
+            communityRevealed = 0;
+            minRaise = 0;
 
-        const playerStack = createDiv([playerInfoDiv, chatStack], "player-stack");
+            while (gameArea.firstChild) {
+                gameArea.removeChild(gameArea.firstChild);
+            }
+            const chatDiv = createDiv([], "chat-div");
+            const chatInput = createInput("", "chat-input");
+            const chatSend = createButton("send", "chat-send");
+            function sendMessage() {
+                const trimmedMessage = String(chatInput.value).trim();
+                if (trimmedMessage) {
+                    console.log(`sending chat message: ${chatInput.value}`);
+                    socket.send(jsonChatMessage(chatInput.value));
+                }
+                chatInput.value = "";
+            }
+            chatSend.addEventListener("click", () => sendMessage());
+            chatInput.addEventListener("keydown", (event) => {
+                if (event.key === "Enter") {
+                    sendMessage();
+                }
+            })
+            const chatInputDiv = createDiv([chatInput,chatSend], "chat-input-div");
+            const chatStack = createDiv([chatDiv, createSpacer(), chatInputDiv], "chat-stack");
+            const playerInfoDiv = createDiv([], "player-info-div");
+            Array.from(players.keys()).forEach(name => {
+                playerInfoDiv.appendChild(players.get(name).element);
+            })
 
-        const holeDiv = createDiv([], "hole-div");
-        const communityDiv = createDiv([], "community-div");
-        const cardDiv = createDiv([communityDiv, holeDiv], "card-div");
-        const buttonDiv = createDiv(createActionButtons(), "action-div");
-        const turnIndicator = createHeading("", 2, "turn-indicator");
-        const pokerStack = createDiv([chipsCounter2, gameInfo, cardDiv, turnIndicator, buttonDiv], "poker-stack");
-        const pokerWrapper = createDiv([pokerStack], "poker-wrapper");
-        gameArea.appendChild(playerStack);
-        gameArea.appendChild(pokerWrapper);
-        pokerQueued = false;
+            const playerStack = createDiv([playerInfoDiv, chatStack], "player-stack");
 
-        // fix chat height
-        requestAnimationFrame(() => fixChatHeight());
-    } else if (messageType === "deal") {
-        const newHole = data.hole;
-        console.log(newHole);
-        console.log(`received hole: ${newHole}`);
-        hole = [];
-        for (let i = 0; i < newHole.length; i++) {
-            hole.push(createCardWithElement(newHole[i], true, true));
-        }
-        const holeDiv = document.getElementById("hole-div");
-        for (let i = 0; i < hole.length; i++) {
-            holeDiv.appendChild(hole[i].element);
-        }
-        const communityDiv = document.getElementById("community-div");
-        communityCards = [];
-        for (let i = 0; i < 5; i++) {
-            communityCards.push(createCardWithElement(0, false, false));
-            communityDiv.appendChild(communityCards[i].element);
-        }
-    } else if (messageType === "chatMessage") {
-        const chat = document.getElementById("chat-div");
-        const messageElement = createHeading(data.message, 2, "chat-message");
-        chat.appendChild(messageElement);
-        chat.scrollTop = chat.scrollHeight;
-    } else if (messageType === "playAgain") {
-        const buttonDiv = document.getElementById("action-div");
-        while (buttonDiv.firstChild) {
-            buttonDiv.removeChild(buttonDiv.firstChild);
-        }
-        const mainMenuButton = createButton("main menu", "leave-button", ["end-game-button"]);
-        const playAgainButton = createButton("play again", "play-again-button", ["end-game-button"]);
-        mainMenuButton.addEventListener("click", () => {
-            mainMenuScreen();
-            socket.send(jsonLeavePoker());
-        });
-        playAgainButton.addEventListener("click", () => {
-            pokerQueueScreen();
-            pokerQueued = true;
-        })
-        buttonDiv.appendChild(mainMenuButton);
-        buttonDiv.appendChild(playAgainButton);
-        
+            const holeDiv = createDiv([], "hole-div");
+            const communityDiv = createDiv([], "community-div");
+            const cardDiv = createDiv([communityDiv, holeDiv], "card-div");
+            const buttonDiv = createDiv(createActionButtons(), "action-div");
+            const turnIndicator = createHeading("", 2, "turn-indicator");
+            const pokerStack = createDiv([chipsCounter2, gameInfo, cardDiv, turnIndicator, buttonDiv], "poker-stack");
+            const pokerWrapper = createDiv([pokerStack], "poker-wrapper");
+            gameArea.appendChild(playerStack);
+            gameArea.appendChild(pokerWrapper);
+            pokerQueued = false;
 
-    } else if (messageType === "rename") {
-        displayName = data.name;
-        chipsCounter.textContent = `${displayName}: ${chips} chips`;
-        chipsCounter2.textContent = `${displayName}: ${chips} chips`;
-    }else {
-        console.log(`unknown message type: ${messageType}`);
-    }
+            // fix chat height
+            requestAnimationFrame(() => fixChatHeight());
+        } else if (messageType === "deal") {
+            const newHole = data.hole;
+            console.log(newHole);
+            console.log(`received hole: ${newHole}`);
+            hole = [];
+            for (let i = 0; i < newHole.length; i++) {
+                hole.push(createCardWithElement(newHole[i], true, true));
+            }
+            const holeDiv = document.getElementById("hole-div");
+            for (let i = 0; i < hole.length; i++) {
+                holeDiv.appendChild(hole[i].element);
+            }
+            const communityDiv = document.getElementById("community-div");
+            communityCards = [];
+            for (let i = 0; i < 5; i++) {
+                communityCards.push(createCardWithElement(0, false, false));
+                communityDiv.appendChild(communityCards[i].element);
+            }
+        } else if (messageType === "chatMessage") {
+            const chat = document.getElementById("chat-div");
+            const messageElement = createHeading(data.message, 2, "chat-message");
+            chat.appendChild(messageElement);
+            chat.scrollTop = chat.scrollHeight;
+        } else if (messageType === "playAgain") {
+            const buttonDiv = document.getElementById("action-div");
+            while (buttonDiv.firstChild) {
+                buttonDiv.removeChild(buttonDiv.firstChild);
+            }
+            const mainMenuButton = createButton("main menu", "leave-button", ["end-game-button"]);
+            const playAgainButton = createButton("play again", "play-again-button", ["end-game-button"]);
+            mainMenuButton.addEventListener("click", () => {
+                mainMenuScreen();
+                socket.send(jsonLeavePoker());
+            });
+            playAgainButton.addEventListener("click", () => {
+                pokerQueueScreen();
+                pokerQueued = true;
+            })
+            buttonDiv.appendChild(mainMenuButton);
+            buttonDiv.appendChild(playAgainButton);
+            
+
+        } else if (messageType === "rename") {
+            displayName = data.name;
+            chipsCounter.textContent = `${displayName}: ${chips} chips`;
+            chipsCounter2.textContent = `${displayName}: ${chips} chips`;
+        }else {
+            console.log(`unknown message type: ${messageType}`);
+        }
+    });
+
+    socket.onopen = () => {
+        console.log('WebSocket connected.');
+    };
+
+    socket.onclose = () => {
+        console.log('WebSocket closed.');
+    };
+
+    socket.onerror = (error) => {
+        console.error('WebSocket error:', error);
+    };
 }
+// Reconnection
+setInterval(() => {
+    if (!socket || socket.readyState === WebSocket.CLOSED) {
+        connectWebSocket();
+    }
+}, 2500);
+
+
+// Initial connection
+connectWebSocket();
+
+window.addEventListener('offline', () => {
+    console.log('Network connection lost.');
+});
 
 function fixChatHeight () {
     const playerStack = document.getElementById("player-stack");
