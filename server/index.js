@@ -2,7 +2,7 @@
 const { v4: uuidv4 } = require('uuid');
 const WebSocketServer = require('ws').Server;
 const socket = new WebSocketServer({ 
-    port: 3000, 
+    port: 3002, 
 });
 let playerCounter = 0;
 

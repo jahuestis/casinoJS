@@ -304,7 +304,7 @@ function connectWebSocket() {
         socket.close();
     }
     
-    socket = new WebSocket('ws://localhost:3000');
+    socket = new WebSocket('wss://node.beanswithwater.net/casino');
 
     socket.addEventListener('message', (event) => {
         const message = JSON.parse(event.data);
