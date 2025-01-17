@@ -232,9 +232,9 @@ class PokerGame {
 
     restart() {
         console.log("Restarting");
-        this.broadcastToPlayers(jsonMessage("playAgain"));
         this.gameState = 0;
         this.kickPlayers();
+        this.broadcastToPlayers(jsonMessage("playAgain"));
     }
 
     endHand() {
@@ -296,7 +296,8 @@ class PokerGame {
         this.minRaise = 0;
         this.broadcastDetails(false, true);
 
-        this.restart();
+        setTimeout(() => this.restart(), 2500);
+        //this.restart();
 
     }
 
@@ -411,10 +412,10 @@ class PokerGame {
 
 
     addToQueue(player) {
-        this.removePlayer(player.id);
-        if (!this.getPlayer(player.id)) {
+        //if (!this.getPlayer(player.id)) {
+            //this.removePlayer(player.id);
             this.playerQueue.push(player);
-        }
+        //}
     }
 
 
@@ -467,8 +468,9 @@ class PokerGame {
 
     advanceFromPurgatory(id) {
         const player = this.getFromPurgatory(id);
+        const playerPresent = this.getPlayer(id);
 
-        if (player) {
+        if (player && !playerPresent) {
             if (this.gameState == 0) {
                 if (this.players.length < this.maxPlayers) {
                     this.players.push(player);
@@ -487,7 +489,12 @@ class PokerGame {
                 player.sendWS(jsonError("matchmaking timeout"));
             }
         } else {
-            console.log("player not in purgatory");
+            if (playerPresent) {
+                console.log("player already in game");
+            } else {
+                console.log("player not in purgatory");
+            }
+            
         }
     }
 
@@ -993,8 +1000,9 @@ class PokerPlayer {
 
     rename(name) {
         if (/^[a-zA-Z0-9_-]+$/.test(name) && name.length > 0 && name.length <= 10 && !poker.getPlayer(this.id)) {
-            poker.removePlayer(this.id);
+            //poker.removePlayer(this.id);
             this.name = name.toLowerCase() + playerCounter++;
+            console.log(`${this.name} renamed`);
         } else {
             this.name = "anon" + playerCounter++;
         }
@@ -1134,6 +1142,7 @@ socket.on('connection', (ws) => {
             if (type === "clientConnected") {
                 if (clients.has(data.id)) {
                     clients(data.id).updateWS(ws);
+                    ws.send(jsonRename(clients.get(data.id).name));
                 } else {
                     clients.set(data.id, new PokerPlayer(data.id, ws, ""));
                     clients.get(data.id).rename(data.name);
