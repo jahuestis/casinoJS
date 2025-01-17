@@ -6,6 +6,7 @@ let chips = 0;
 let displayName = "anon";
 let playerID;
 let myTurn = false;
+let minRaise = 0;
 
 const players = new Map();
 let communityCards = [];
@@ -326,8 +327,9 @@ socket.onmessage = (event) => {
 
         const raiseInput = document.getElementById("raise-input");
         if (raiseInput) {
-            if (raiseInput.value < data.minRaise || data.forceRaiseUpdate) {
-                raiseInput.value = data.minRaise;
+            if (minRaise < data.minRaise || data.forceRaiseUpdate) {
+                minRaise = data.minRaise;
+                raiseInput.value = minRaise;
             }
         }
 
@@ -363,6 +365,7 @@ socket.onmessage = (event) => {
     } else if (messageType === "handStart") {
         console.log("hand started!");
         communityRevealed = 0;
+        minRaise = 0;
 
         while (gameArea.firstChild) {
             gameArea.removeChild(gameArea.firstChild);
