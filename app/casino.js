@@ -343,7 +343,7 @@ socket.onmessage = (event) => {
             }
         });
         const community = data.community;
-        if (community.length > communityRevealed) {
+        if (community.length > communityRevealed && communityCards.length == 5) {
             for (let i = communityRevealed; i < community.length; i++) {
                 communityCards[i].setCard(community[i]);
                 communityCards[i].setFace(true);
