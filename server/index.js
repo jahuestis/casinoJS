@@ -19,6 +19,7 @@ class PokerGame {
         this.turnIndex = 0;
         this.deck = [];
         this.community = [];
+        this.revealed = 0;
         this.defaultMinRaise = 0;
         this.minRaise = 0;
         this.bet = 0;
@@ -64,7 +65,7 @@ class PokerGame {
         }
 
         this.resetBets();
-        console.log(this.pots);
+        //console.log(this.pots);
     }
 
     restoreDeck() {
@@ -122,6 +123,7 @@ class PokerGame {
             console.log(`default min raise set to ${this.minRaise}`);
 
             // Prepare game
+            this.revealed = 0;
             this.clearActionTimeout();
             this.resetPlayers();
             this.shiftSeats();
@@ -392,7 +394,7 @@ class PokerGame {
 
     reveal(range) {
         console.log(`revealed ${range} community cards`);
-        this.broadcastToPlayers(jsonCommunity(this.community.slice(0, range)));
+        this.revealed = range;
     }
 
     resetBets() {
@@ -686,7 +688,8 @@ class PokerGame {
         this.pots.forEach(pot => {
             maxPayout += pot.size;
         })
-        this.broadcastToPlayers(jsonDetails(details, this.minRaise, this.bet, maxPayout, playerTurn, this.gameState, clear, forceRaiseUpdate));
+        
+        this.broadcastToPlayers(jsonDetails(details, this.minRaise, this.bet, this.community.slice(0, this.revealed), maxPayout, playerTurn, this.gameState, clear, forceRaiseUpdate));
     }
 
     formatDetails(player) {
@@ -1127,7 +1130,7 @@ socket.on('connection', (ws) => {
                 const client = clients.get(data.id);
                 client.sendWS(jsonInitializeClient(client.name, client.chips));
             } else if (type === "freeChips") {
-                if (clients.has(data.id)) {
+                if (clients.has(data.id) && !poker.getPlayer(data.id)) {
                     clients.get(data.id).getFreeChips();
                 }
             } else if (type === "queuePoker") {
@@ -1225,11 +1228,12 @@ function jsonDeal(hole) {
     });
 }
 
-function jsonDetails(details, minRaise, bet, maxPayout, turn, state, clear = false, forceRaiseUpdate = false) {
+function jsonDetails(details, minRaise, bet, community, maxPayout, turn, state, clear = false, forceRaiseUpdate = false) {
     return jsonMessage("details", {
         details: details,
         minRaise: minRaise,
         bet: bet,
+        community: community,
         maxPayout: maxPayout,
         turn: turn,
         state: state,

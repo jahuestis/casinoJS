@@ -9,6 +9,7 @@ let myTurn = false;
 
 const players = new Map();
 let communityCards = [];
+let communityRevealed = 0;
 
 function updateChips() {
     socket.send(jsonFreeChips());
@@ -312,6 +313,14 @@ socket.onmessage = (event) => {
                 players.get(details.name).setText(detailsString(details));
             }
         });
+        const community = data.community;
+        if (community.length > communityRevealed) {
+            for (let i = communityRevealed; i < community.length; i++) {
+                communityCards[i].setCard(community[i]);
+                communityCards[i].setFace(true);
+            }
+            communityRevealed = data.community.length;
+        }
 
         gameInfo.textContent = `bet: ${data.bet} | min raise: ${data.minRaise} | max payout: ${data.maxPayout}`;
 
@@ -353,6 +362,8 @@ socket.onmessage = (event) => {
         }
     } else if (messageType === "handStart") {
         console.log("hand started!");
+        communityRevealed = 0;
+
         while (gameArea.firstChild) {
             gameArea.removeChild(gameArea.firstChild);
         }
@@ -412,13 +423,6 @@ socket.onmessage = (event) => {
         for (let i = 0; i < 5; i++) {
             communityCards.push(createCardWithElement(0, false, false));
             communityDiv.appendChild(communityCards[i].element);
-        }
-    } else if (messageType === "communityCards") {
-        console.log(`received community cards: ${data.cards}`);
-        const cards = data.cards;
-        for (let i = 0; i < cards.length; i++) {
-            communityCards[i].setCard(cards[i]);
-            communityCards[i].setFace(true);
         }
     } else if (messageType === "chatMessage") {
         const chat = document.getElementById("chat-div");
