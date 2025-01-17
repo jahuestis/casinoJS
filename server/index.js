@@ -638,7 +638,7 @@ class PokerGame {
             }
 
         } else if (this.gameState == 1) {
-            this.broadcastDetails();
+            //this.broadcastDetails();
         }
 
         //console.log(`queue: ${this.playerQueue}`);
@@ -670,15 +670,6 @@ class PokerGame {
         } else {
             console.log("request to send chat has invalid player ID");
         }
-    }
-
-    broadcastNames() {
-        // send list display names to all current players
-        const playerNames = []
-        this.players.forEach(player => {
-            playerNames.push(player.name);
-        }) 
-        this.broadcastToPlayers(jsonNamesList(playerNames));
     }
 
     broadcastDetails(clear = false, forceRaiseUpdate = false) {
@@ -1143,6 +1134,9 @@ socket.on('connection', (ws) => {
                 if (clients.has(data.id)) {
                     clients(data.id).updateWS(ws);
                     ws.send(jsonRename(clients.get(data.id).name));
+                    if (poker.getPlayer(data.id)) {
+                        poker.broadcastDetails();
+                    }
                 } else {
                     clients.set(data.id, new PokerPlayer(data.id, ws, ""));
                     clients.get(data.id).rename(data.name);
