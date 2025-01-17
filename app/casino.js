@@ -265,7 +265,35 @@ chipsButton.addEventListener("click", () => updateChips(25));
 const pokerButton = createButton("play poker", "poker-button", ["menu-button"]);
 pokerButton.addEventListener("click", () => requestPoker());
 const blackjackButton = createButton("blackjack");
-const mainMenu = createDiv([title, createSpacer(), pokerButton, chipsButton, createSpacer(), chipsCounter], "main-menu");
+const changeNameButton = createButton("rename", "change-name-button", ["menu-button"]);
+changeNameButton.addEventListener("click", () => showChangeName());
+const mainMenu = createDiv([title, createSpacer(), pokerButton, chipsButton, changeNameButton, createSpacer(), chipsCounter], "main-menu");
+
+
+const changeNameInput = createInput("", "change-name-input", ["menu-button"]);
+changeNameInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+        rename();
+    }
+})
+const submitNameButton = createButton("submit", "submit-name-button", ["menu-button"]);
+submitNameButton.addEventListener("click", () => rename());
+const changeNameHeader = createHeading("max 10 characters", 2, "change-name-header");
+const changeNameInputDiv = createDiv([changeNameInput, submitNameButton], "change-name-input-div");
+const changeNameMenu = createDiv([createSpacer(), changeNameInputDiv, changeNameHeader, createSpacer()], "change-name-menu");
+function showChangeName() {
+    while (gameArea.firstChild) {
+        gameArea.firstChild.remove();
+    }
+    gameArea.appendChild(changeNameMenu);
+}
+
+function rename() {
+    socket.send(jsonRename(changeNameInput.value));
+    mainMenuScreen();
+}
+
+
 
 // -- Client --
 const socket = new WebSocket('ws://localhost:3000');
@@ -451,7 +479,11 @@ socket.onmessage = (event) => {
         buttonDiv.appendChild(playAgainButton);
         
 
-    } else {
+    } else if (messageType === "rename") {
+        displayName = data.name;
+        chipsCounter.textContent = `${displayName}: ${chips} chips`;
+        chipsCounter2.textContent = `${displayName}: ${chips} chips`;
+    }else {
         console.log(`unknown message type: ${messageType}`);
     }
 }
@@ -479,6 +511,13 @@ function jsonConnect(name, id) {
     return jsonMessage("clientConnected", {
         name: name,
         id: id
+    });
+}
+
+function jsonRename(name) {
+    return jsonMessage("rename", {
+        id: playerID, type: "rename", 
+        name: name
     });
 }
 

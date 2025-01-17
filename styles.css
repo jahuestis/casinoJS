@@ -67,7 +67,7 @@ a {
     flex-direction: row;
 }
 
-#loading-div, #main-menu, #matchmaking-stack {
+#loading-div, #main-menu, #matchmaking-stack, #change-name-menu {
     height: 90vh;
     display: flex;
     flex-direction: column;
@@ -80,6 +80,18 @@ a {
 #main-menu {
     justify-content: flex-start;
     margin: auto
+}
+
+#change-name-menu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#change-name-input-div {
+    display: flex;
+    flex-direction: row;
 }
 
 

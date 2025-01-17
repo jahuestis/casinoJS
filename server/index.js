@@ -4,7 +4,7 @@ const WebSocketServer = require('ws').Server;
 const socket = new WebSocketServer({ 
     port: 3000, 
 });
-let testPlayerCounter = 0;
+let playerCounter = 0;
 
 const suits = ["H", "S", "C", "D"];
 
@@ -991,6 +991,15 @@ class PokerPlayer {
         this.score = null;
     }
 
+    rename(name) {
+        if (/^[a-zA-Z0-9_-]+$/.test(name) && name.length > 0 && name.length <= 10 && !poker.getPlayer(this.id)) {
+            poker.removePlayer(this.id);
+            this.name = name.toLowerCase() + playerCounter++;
+        } else {
+            this.name = "anon" + playerCounter++;
+        }
+    }
+
     reset() {
         this.hole = [];
         this.bet = 0;
@@ -1126,7 +1135,8 @@ socket.on('connection', (ws) => {
                 if (clients.has(data.id)) {
                     clients(data.id).updateWS(ws);
                 } else {
-                    clients.set(data.id, new PokerPlayer(data.id, ws, data.name + testPlayerCounter++));
+                    clients.set(data.id, new PokerPlayer(data.id, ws, ""));
+                    clients.get(data.id).rename(data.name);
                 }
                 console.log(`${clients.get(data.id).name} connected`);
                 const client = clients.get(data.id);
@@ -1161,7 +1171,12 @@ socket.on('connection', (ws) => {
                 if (poker.gameState == 1 && clients.has(data.id)) {
                     poker.action(data.id, data.action, data.raise);
                 }
-            } else {
+            } else if (type === "rename") {
+                if (clients.has(data.id)) {
+                    clients.get(data.id).rename(data.name);
+                    ws.send(jsonRename(clients.get(data.id).name));
+                }
+            }else {
                 throw new Error(`Unknown message type: ${type}`);
             }
 
@@ -1185,6 +1200,13 @@ function jsonMessage(type, data) {
         type: type,
         data: data
     });
+}
+
+function jsonRename(name) {
+    return jsonMessage("rename", {
+        name: name
+    })
+
 }
 
 function jsonRequestClient(id) {
